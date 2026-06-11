@@ -1,0 +1,194 @@
+# Malir Cantt Marketplace
+
+## Project Vision
+
+Build a modern, premium, community-focused marketplace exclusively for Malir Cantt residents. The website should feel trustworthy, simple, and fast rather than cluttered like traditional classified websites.
+
+---
+
+## Design Philosophy
+
+The UI should prioritize:
+
+* Clean and minimal layouts.
+* Plenty of white space.
+* Mobile-first responsiveness.
+* Large, easy-to-read text.
+* Modern rounded cards and buttons.
+* Fast loading and smooth interactions.
+* Professional appearance similar to modern startup products.
+
+Avoid:
+
+* Cluttered pages.
+* Too many colors.
+* Excessive animations.
+* Tiny buttons or cramped layouts.
+
+---
+
+## Visual Inspiration
+
+The website should take inspiration from:
+
+* Facebook Marketplace for browsing simplicity.
+* Airbnb for clean layouts.
+* Apple's website for spacing and typography.
+* Stripe for modern UI components.
+
+Do NOT directly copy any website. Instead, adopt their design principles.
+
+---
+
+## Color Palette
+
+Primary:
+
+* Deep Green
+* White
+* Light Gray
+
+Accent:
+
+* Dark Gray
+* Soft Blue for interactive elements.
+
+The design should feel modern and premium.
+
+---
+
+## Typography
+
+* Clean sans-serif fonts.
+* Clear visual hierarchy.
+* Large headings.
+* Easy readability.
+
+---
+
+## Homepage Layout
+
+### Navigation Bar
+
+Should include:
+
+* Logo
+* Search bar
+* Categories
+* Login
+* Add Listing button
+
+Should remain simple and responsive.
+
+---
+
+### Hero Section
+
+Large search functionality.
+
+Headline:
+"Buy and Sell Within Malir Cantt"
+
+Subheadline explaining the community marketplace concept.
+
+---
+
+### Categories
+
+Display category cards such as:
+
+* Cars
+* Electronics
+* Property
+* Furniture
+* Jobs
+
+
+---
+
+### Featured Listings
+
+Modern card grid showing:
+
+* Image
+* Price
+* Title
+* Location
+* Time posted
+
+---
+
+## Product Listing Cards
+
+Each card should include:
+
+* Large image.
+* Bold price.
+* Product title.
+* Category.
+* Malir Cantt location.
+* Save/Favorite button.
+
+Cards should have subtle hover effects.
+
+---
+
+## User Experience Rules
+
+Claude should always prefer:
+
+* Fewer clicks.
+* Simpler navigation.
+* Clear call-to-action buttons.
+* Consistent spacing.
+* Accessible layouts.
+
+When making design decisions, prioritize user trust and simplicity over adding features. Try to add clean sleek animations.
+
+---
+
+## Development Philosophy
+
+When implementing features:
+
+1. Keep components modular.
+2. Write reusable React components.
+3. Avoid unnecessary complexity.
+4. Maintain responsive design.
+5. Keep code organized for future scaling.
+
+---
+
+## MVP Features
+
+* Homepage
+* Search
+* Categories
+* Listings
+* Listing details
+* User authentication
+* Add listing
+* Seller Number icon with the name "Contact Seller" should pop up the sellers contact number and should allow the buyer to call it.
+
+---
+
+## Long-Term Features
+
+* Messaging
+* Favorites
+* Notifications
+* Premium listings
+* Business accounts
+* Admin dashboard
+
+---
+
+## Claude Instructions
+
+When generating code:
+
+* Maintain the existing design language.
+* Keep components reusable.
+* Preserve mobile responsiveness.
+* Avoid redesigning existing sections unless specifically requested.
+* Explain major architectural decisions before implementing large changes.
