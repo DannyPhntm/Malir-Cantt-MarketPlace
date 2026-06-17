@@ -92,6 +92,8 @@ export function adaptListing(listing) {
 
   return {
     id: listing.id,
+    // Owner id — lets the UI gate edit/manage controls to the owner.
+    userId: listing.userId ?? listing.user?.id ?? null,
     title: listing.title,
     description: listing.description,
     categorySlug: listing.category,

@@ -107,8 +107,8 @@ function ListingCard({ listing, onStatusChange, onDelete, busy }) {
 
         {/* Action row */}
         <div className="myl-card__actions">
-          {/* Edit — links to add-listing until a dedicated edit page exists */}
-          <Link to="/add-listing" className="myl-action myl-action--muted">
+          {/* Edit — dedicated edit page */}
+          <Link to={`/edit-listing/${listing.id}`} className="myl-action myl-action--muted">
             Edit
           </Link>
 

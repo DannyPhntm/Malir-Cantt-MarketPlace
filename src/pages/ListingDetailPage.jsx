@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useListings } from '../context/ListingsContext';
+import { useAuth } from '../context/AuthContext';
+import { useFavorites } from '../context/FavoritesContext';
+import listingsApi from '../services/listingsApi';
 import Lightbox from '../components/Lightbox';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PageTransition from '../components/PageTransition';
@@ -70,6 +73,19 @@ function CalendarIcon() {
   );
 }
 
+function HeartIcon({ filled }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+    </svg>
+  );
+}
+
+// Owner-facing status labels for the manage panel.
+const OWNER_STATUS_LABEL = {
+  approved: 'Active', pending: 'Pending review', rejected: 'Rejected', sold: 'Sold', hidden: 'Archived',
+};
+
 // Convert a local Pakistani number (e.g. "0300-1234567") into wa.me format (92XXXXXXXXXX)
 function toWhatsAppNumber(phone) {
   const digits = (phone || '').replace(/\D/g, '');
@@ -80,7 +96,10 @@ function toWhatsAppNumber(phone) {
 
 export default function ListingDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { allListings, getListing } = useListings();
+  const { user } = useAuth();
+  const { isFavorited, toggle } = useFavorites();
   const [listing, setListing] = useState(null);
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'notfound'
   const [phoneRevealed, setPhoneRevealed] = useState(false);
@@ -88,6 +107,9 @@ export default function ListingDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [activeThumb, setActiveThumb] = useState(0);
+  const [ownerBusy, setOwnerBusy] = useState(false);
+  const [ownerError, setOwnerError] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Fetch the listing from the backend by id (works for any status, so an owner
   // can view their own listing immediately after posting).
@@ -161,6 +183,39 @@ export default function ListingDetailPage() {
   const sellerArea = seller.area || listing.location;
   const whatsAppMessage = `Hi,\n\nI saw your listing for ${listing.title} on Malir Cantt Marketplace.\n\nIs this still available?`;
   const whatsAppUrl = `https://wa.me/${toWhatsAppNumber(seller.phone)}?text=${encodeURIComponent(whatsAppMessage)}`;
+
+  // Owner-only controls. Admin moderation lives in the Admin Dashboard, so an
+  // admin viewing someone else's listing sees the public (buyer) view here.
+  const isOwner = !!(user && listing.userId != null && listing.userId === user.id);
+  const saved = isFavorited(listing.id);
+
+  const ownerStatusChange = async (next) => {
+    const prev = listing.status;
+    setOwnerBusy(true);
+    setOwnerError('');
+    setListing((l) => ({ ...l, status: next }));
+    try {
+      await listingsApi.update(listing.id, { status: next });
+    } catch (e) {
+      setListing((l) => ({ ...l, status: prev }));
+      setOwnerError(e?.message || 'Could not update the listing.');
+    } finally {
+      setOwnerBusy(false);
+    }
+  };
+
+  const ownerDelete = async () => {
+    setOwnerBusy(true);
+    setOwnerError('');
+    try {
+      await listingsApi.remove(listing.id);
+      navigate('/my-listings');
+    } catch (e) {
+      setOwnerError(e?.message || 'Could not delete the listing.');
+      setOwnerBusy(false);
+      setConfirmDelete(false);
+    }
+  };
 
   return (
     <PageTransition>
@@ -356,64 +411,129 @@ export default function ListingDetailPage() {
 
                 <div className="detail__seller-divider" aria-hidden="true" />
 
-                {/* Contact actions — WhatsApp (always) + Call (reveals number) */}
-                <div className="detail__contact-actions">
-                  <a
-                    href={whatsAppUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="detail__contact-btn detail__contact-btn--whatsapp"
-                  >
-                    <WhatsAppIcon />
-                    WhatsApp Seller
-                  </a>
+                {isOwner ? (
+                  /* ── Owner controls — only the listing owner sees these ── */
+                  <div className="detail__owner-actions">
+                    <p className="detail__owner-label">Manage your listing</p>
+                    <span className={`detail__owner-status detail__owner-status--${listing.status}`}>
+                      {OWNER_STATUS_LABEL[listing.status] || listing.status}
+                    </span>
+                    {ownerError && <p className="detail__owner-error" role="alert">{ownerError}</p>}
 
-                  <AnimatePresence mode="wait" initial={false}>
-                    {!phoneRevealed ? (
-                      <motion.button
-                        key="call-btn"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                        className="detail__contact-btn"
-                        onClick={() => setPhoneRevealed(true)}
-                      >
-                        <PhoneIcon />
-                        Call Seller
-                      </motion.button>
-                    ) : (
-                      <motion.div
-                        key="phone-revealed"
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                        className="detail__phone-wrap"
-                      >
-                        <p className="detail__phone-label">Seller's number</p>
-                        <div className="detail__phone-number">
-                          <PhoneIcon />
-                          {seller.phone}
-                        </div>
-                        <div className="detail__phone-actions">
-                          <a
-                            href={`tel:${seller.phone}`}
-                            className="detail__phone-action-btn detail__phone-action-btn--call"
-                          >
-                            <PhoneIcon /> Call
-                          </a>
-                          <button
-                            className={`detail__phone-action-btn ${copied ? 'detail__phone-action-btn--copied' : 'detail__phone-action-btn--copy'}`}
-                            onClick={() => handleCopy(seller.phone)}
-                            disabled={copied}
-                          >
-                            {copied ? <><CheckIcon /> Copied!</> : <><CopyIcon /> Copy</>}
-                          </button>
-                        </div>
-                      </motion.div>
+                    <Link to={`/edit-listing/${listing.id}`} className="detail__contact-btn detail__owner-btn--edit">
+                      Edit Listing
+                    </Link>
+
+                    {listing.status === 'approved' && (
+                      <>
+                        <button className="detail__contact-btn" disabled={ownerBusy} onClick={() => ownerStatusChange('sold')}>
+                          Mark as Sold
+                        </button>
+                        <button className="detail__contact-btn detail__owner-btn--muted" disabled={ownerBusy} onClick={() => ownerStatusChange('hidden')}>
+                          Archive Listing
+                        </button>
+                      </>
                     )}
-                  </AnimatePresence>
-                </div>
+                    {listing.status === 'sold' && (
+                      <button className="detail__contact-btn" disabled={ownerBusy} onClick={() => ownerStatusChange('approved')}>
+                        Mark as Available
+                      </button>
+                    )}
+                    {listing.status === 'hidden' && (
+                      <button className="detail__contact-btn" disabled={ownerBusy} onClick={() => ownerStatusChange('approved')}>
+                        Restore Listing
+                      </button>
+                    )}
+                    {(listing.status === 'pending' || listing.status === 'rejected') && (
+                      <p className="detail__owner-note">
+                        {listing.status === 'pending' ? 'Awaiting admin review.' : 'Not approved — edit to resubmit for review.'}
+                      </p>
+                    )}
+
+                    {confirmDelete ? (
+                      <div className="detail__owner-confirm">
+                        <button className="detail__contact-btn detail__owner-btn--delete" disabled={ownerBusy} onClick={ownerDelete}>
+                          Confirm Delete
+                        </button>
+                        <button className="detail__contact-btn detail__owner-btn--muted" disabled={ownerBusy} onClick={() => setConfirmDelete(false)}>
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button className="detail__contact-btn detail__owner-btn--delete" disabled={ownerBusy} onClick={() => setConfirmDelete(true)}>
+                        Delete Listing
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  /* ── Public contact actions — WhatsApp + Call + Save ── */
+                  <div className="detail__contact-actions">
+                    <a
+                      href={whatsAppUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="detail__contact-btn detail__contact-btn--whatsapp"
+                    >
+                      <WhatsAppIcon />
+                      WhatsApp Seller
+                    </a>
+
+                    <AnimatePresence mode="wait" initial={false}>
+                      {!phoneRevealed ? (
+                        <motion.button
+                          key="call-btn"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className="detail__contact-btn"
+                          onClick={() => setPhoneRevealed(true)}
+                        >
+                          <PhoneIcon />
+                          Call Seller
+                        </motion.button>
+                      ) : (
+                        <motion.div
+                          key="phone-revealed"
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                          className="detail__phone-wrap"
+                        >
+                          <p className="detail__phone-label">Seller's number</p>
+                          <div className="detail__phone-number">
+                            <PhoneIcon />
+                            {seller.phone}
+                          </div>
+                          <div className="detail__phone-actions">
+                            <a
+                              href={`tel:${seller.phone}`}
+                              className="detail__phone-action-btn detail__phone-action-btn--call"
+                            >
+                              <PhoneIcon /> Call
+                            </a>
+                            <button
+                              className={`detail__phone-action-btn ${copied ? 'detail__phone-action-btn--copied' : 'detail__phone-action-btn--copy'}`}
+                              onClick={() => handleCopy(seller.phone)}
+                              disabled={copied}
+                            >
+                              {copied ? <><CheckIcon /> Copied!</> : <><CopyIcon /> Copy</>}
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <button
+                      className={`detail__contact-btn detail__contact-btn--save${saved ? ' detail__contact-btn--saved' : ''}`}
+                      onClick={() => toggle(listing)}
+                      aria-pressed={saved}
+                    >
+                      <HeartIcon filled={saved} />
+                      {saved ? 'Saved' : 'Save Listing'}
+                    </button>
+                  </div>
+                )}
 
                 {/* Safety tip */}
                 <div className="detail__safety-tip">

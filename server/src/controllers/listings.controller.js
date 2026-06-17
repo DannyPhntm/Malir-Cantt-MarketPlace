@@ -1,6 +1,12 @@
 import prisma from '../lib/prisma.js';
 import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
-import { OWNER_SETTABLE_STATUSES, BUSINESS_ONLY_CATEGORIES } from '../lib/constants.js';
+import {
+  OWNER_SETTABLE_STATUSES,
+  BUSINESS_ONLY_CATEGORIES,
+  IMAGE_OPTIONAL_CATEGORIES,
+  MIN_IMAGES,
+  MAX_IMAGES,
+} from '../lib/constants.js';
 
 const withImages = { images: { orderBy: { displayOrder: 'asc' } } };
 
@@ -121,18 +127,54 @@ async function assertListingOwner(id, reqUser) {
   return existing;
 }
 
-/* PATCH /api/listings/:id — owner edits (title/description/price/featuredRequested). */
+/* PATCH /api/listings/:id — owner (or admin) edits.
+   Handles the full edit form: title/description/price/featuredRequested, the
+   category-specific `details` map, the image set (add/remove/reorder), and
+   lifecycle status. Category is intentionally NOT editable here. */
 export const updateListing = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const existing = await assertListingOwner(id, req.user);
+  const { status, details, images, ...rest } = req.body;
 
-  // A non-admin owner can only change status while the listing is in a
-  // lifecycle state (approved/sold/hidden) — not while pending or rejected.
-  if (req.body.status && req.user.role !== 'admin' && !OWNER_SETTABLE_STATUSES.includes(existing.status)) {
-    throw new ApiError(400, 'This listing is awaiting review and cannot change status yet.');
+  // Status transitions for a non-admin owner: lifecycle moves from a live state
+  // (approved/sold/hidden), plus resubmitting a rejected listing (→ pending).
+  if (status && req.user.role !== 'admin') {
+    const ownerOk =
+      OWNER_SETTABLE_STATUSES.includes(existing.status) ||
+      (existing.status === 'rejected' && status === 'pending');
+    if (!ownerOk) {
+      throw new ApiError(400, 'This listing is awaiting review and cannot change status yet.');
+    }
   }
 
-  const listing = await prisma.listing.update({ where: { id }, data: req.body, include: withImages });
+  const data = { ...rest };
+  if (status !== undefined) data.status = status;
+
+  // Category-specific attributes — clean empty values, store as JSON (or null).
+  if (details !== undefined) {
+    const cleaned = Object.fromEntries(
+      Object.entries(details || {}).filter(([, v]) => v != null && String(v).trim() !== ''),
+    );
+    data.details = Object.keys(cleaned).length ? JSON.stringify(cleaned) : null;
+  }
+
+  // Image set — replace wholesale (covers add / remove / reorder). The min-count
+  // rule depends on the (unchangeable) category, so it's enforced here.
+  if (images !== undefined) {
+    const optional = IMAGE_OPTIONAL_CATEGORIES.includes(existing.category);
+    if (!optional && images.length < MIN_IMAGES) {
+      throw new ApiError(422, `At least ${MIN_IMAGES} image is required for ${existing.category} listings.`);
+    }
+    if (images.length > MAX_IMAGES) {
+      throw new ApiError(422, `A listing can have at most ${MAX_IMAGES} images.`);
+    }
+    data.images = {
+      deleteMany: {},
+      create: images.map((img, i) => ({ imageUrl: img.imageUrl, displayOrder: img.displayOrder ?? i })),
+    };
+  }
+
+  const listing = await prisma.listing.update({ where: { id }, data, include: withImages });
   res.json({ listing });
 });
 

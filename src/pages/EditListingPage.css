@@ -1,0 +1,139 @@
+/* Edit Listing — reuses the Add Listing form cards/inputs (AddListingPage.css);
+   this file only adds the edit-specific page chrome. */
+
+.edit-listing__form-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Locked category display */
+.edit-listing__category-locked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+}
+
+.edit-listing__category-lock-note {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-regular);
+  color: var(--color-secondary);
+}
+
+/* Image reorder controls (on each thumb) */
+.edit-photo-reorder {
+  position: absolute;
+  bottom: var(--space-2);
+  left: var(--space-2);
+  display: flex;
+  gap: 4px;
+}
+
+.edit-photo-move {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: rgba(13, 42, 26, 0.72);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  transition: background var(--duration-fast) var(--ease-default);
+}
+
+.edit-photo-move:not(:disabled):hover {
+  background: var(--color-primary);
+}
+
+.edit-photo-move:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Action row (Cancel + Save) */
+.edit-listing__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.edit-listing__save {
+  flex: 1;
+  margin-top: 0;
+}
+
+.edit-listing__cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-secondary);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.edit-listing__cancel:hover {
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+/* Unauthorized / not-found notice */
+.edit-listing__notice {
+  max-width: 480px;
+  margin: var(--space-16) auto;
+  text-align: center;
+  padding: var(--space-8) var(--space-6);
+}
+
+.edit-listing__notice-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+  margin-bottom: var(--space-2);
+}
+
+.edit-listing__notice-text {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  color: var(--color-secondary);
+  margin-bottom: var(--space-5);
+}
+
+.edit-listing__notice-link {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary);
+}
+
+.edit-listing__notice-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 560px) {
+  .edit-listing__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .edit-listing__cancel {
+    width: 100%;
+  }
+}

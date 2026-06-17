@@ -102,9 +102,15 @@ export const listingUpdateSchema = z
     description: z.string().trim().min(10).optional(),
     price: z.number().int().nonnegative().optional(),
     featuredRequested: z.boolean().optional(),
-    // Owner lifecycle (mark sold / hide / re-activate). Transition rules are
-    // enforced in the controller; admins may set any status via /status.
-    status: z.enum(['approved', 'sold', 'hidden']).optional(),
+    // Category-specific attributes (Edit Listing). Category itself is not editable.
+    details: z.record(z.string()).optional(),
+    // Full image set on edit (add/remove/reorder). Min-count rule is enforced in
+    // the controller (it depends on the category). Base64 data-URLs allowed.
+    images: z.array(listingImageInput).max(MAX_IMAGES, `A listing can have at most ${MAX_IMAGES} images.`).optional(),
+    // Owner lifecycle (mark sold / hide / re-activate) + resubmit a rejected
+    // listing (→ pending). Transition rules enforced in the controller; admins
+    // may set any status via /status.
+    status: z.enum(['pending', 'approved', 'sold', 'hidden']).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, { message: 'No fields to update.' });
 

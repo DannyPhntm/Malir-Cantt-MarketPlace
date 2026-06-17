@@ -546,6 +546,112 @@
   box-shadow: 0 4px 16px rgba(37, 211, 102, 0.32);
 }
 
+/* Save Listing (public) */
+.detail__contact-btn--save {
+  background: var(--color-white);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+}
+
+.detail__contact-btn--save:hover {
+  background: var(--color-surface);
+  border-color: var(--color-ink);
+  transform: none;
+  box-shadow: none;
+}
+
+.detail__contact-btn--saved {
+  background: #fff1f1;
+  color: var(--color-danger);
+  border-color: rgba(220, 53, 69, 0.4);
+}
+
+.detail__contact-btn--saved:hover {
+  background: #ffe5e5;
+  border-color: var(--color-danger);
+}
+
+/* ── Owner controls (only the listing owner) ── */
+.detail__owner-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.detail__owner-label {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+}
+
+.detail__owner-status {
+  align-self: flex-start;
+  padding: 3px 12px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  background: var(--color-surface);
+  color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.detail__owner-status--approved {
+  background: rgba(26, 107, 69, 0.1);
+  color: var(--color-primary);
+  border-color: rgba(26, 107, 69, 0.25);
+}
+
+.detail__owner-btn--muted {
+  background: var(--color-white);
+  color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.detail__owner-btn--muted:hover {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+  transform: none;
+  box-shadow: none;
+}
+
+.detail__owner-btn--delete {
+  background: var(--color-white);
+  color: var(--color-danger);
+  border: 1px solid var(--color-border);
+}
+
+.detail__owner-btn--delete:hover {
+  background: var(--color-danger);
+  color: #fff;
+  border-color: var(--color-danger);
+  transform: none;
+  box-shadow: none;
+}
+
+.detail__owner-confirm {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.detail__owner-confirm .detail__contact-btn {
+  flex: 1;
+}
+
+.detail__owner-note {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-secondary);
+}
+
+.detail__owner-error {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
 /* Phone reveal */
 .detail__phone-wrap {
   display: flex;

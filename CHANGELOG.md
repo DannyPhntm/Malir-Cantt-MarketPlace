@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-06-17 — Phase 5.6: Edit Listing + Owner Controls
+
+Added a dedicated Edit Listing experience and gated owner actions on the listing detail page. **No UI redesign** — the edit form reuses the Add Listing cards/inputs (`AddListingPage.css`) and the `CategoryFields` component; owner controls reuse the existing detail-page button styles.
+
+### Added
+- **`/edit-listing/:id`** (`EditListingPage.jsx` + `.css`) — route-protected (`RequireAuth`; logged-out → login). Loads the listing, pre-fills general fields (title/price/description) and all category-specific fields from `details`, and locks the category (changing it would change the whole field set). **Images**: reuse existing, add, remove, and reorder (‹ › swap; first = cover), enforcing 1–10 (Jobs/Services 0–10). Saves via **PATCH** (never creates), shows a success message, and redirects to My Listings. Editing a **rejected** listing resubmits it (→ pending).
+- **Owner controls on the listing detail page** — only the listing **owner** sees Edit / Mark as Sold / Archive (hide) / Delete (with confirm), plus a status chip. Status-aware (sold → Mark Available; hidden → Restore; pending/rejected → note). Public/non-owner viewers see **only** Contact Seller, WhatsApp, and a new **Save Listing** button. Admin moderation stays in the Admin Dashboard — no admin buttons added to listing pages.
+- Adapter now exposes `userId` so the UI can check ownership.
+
+### Changed
+- **`PATCH /listings/:id`** now also accepts `details` (category attributes, cleaned → JSON), `images` (full set; replaced atomically via `deleteMany` + `create`; min-count enforced by category), and `status: 'pending'` so a non-admin owner can resubmit a rejected listing. `listingUpdateSchema` extended accordingly.
+- **My Listings** "Edit" now links to `/edit-listing/:id` (was `/add-listing`).
+
+### Security (verified)
+- Backend ownership enforced on PATCH/DELETE: logged-out → **401**, non-owner → **403**, owner/admin → **200**. The Edit page also checks ownership client-side and renders an **Unauthorized** notice for non-owners (defence in depth; the backend is the real gate). Owner controls are hidden from non-owners in the UI. Category is not editable (schema has no `category` field, so an injected one is stripped). A non-admin owner still cannot self-approve a pending listing.
+
+### Verified (13/13 edit-endpoint checks + `npm run build`)
+- Create → edit content/details; add images; reorder (cover swap); category-lock (PATCH category ignored); vehicles can't drop below 1 image (422); 401/403/admin-200; rejected→resubmit→pending; owner can't self-approve pending (400); owner delete (204). Frontend build passes.
+
+---
+
 ## 2026-06-17 — Phase 5.5: Admin System Completion
 
 Completed the admin moderation system on top of the existing Phase 5.2.4–5.2.5 foundation (seed admin, JWT `requireRole('admin')`, AdminPage, `adminApi`, `RequireAdmin`). This was an **audit + fill-the-gaps** pass — no rebuild, no UI redesign; all existing `admin__*` classes and endpoints reused.

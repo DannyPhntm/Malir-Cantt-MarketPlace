@@ -4,15 +4,15 @@
 
 ## Next 3 Priorities (recommended)
 
-The backend is live end-to-end (DB, JWT auth + roles, listings CRUD, admin
-moderation, saved listings, search/details, Food category — Phases 5.1 → 5.3).
+The backend is live end-to-end (DB, JWT auth + roles, listings CRUD + edit, admin
+moderation, saved listings, search/details, Food category — Phases 5.1 → 5.6).
 The next priorities target production-readiness and scale:
 
 1. **Image upload + hosting** — biggest production blocker
    Listing images are stored as base64 data-URLs inside the DB (`listing_images.image_url`),
    which bloats payloads/storage and won't scale. Add a real store (S3 / Supabase
    Storage / Cloudinary) + an upload endpoint in front of `createListing`; the column
-   already holds a URL, so the read path doesn't change.
+   already holds a URL, so the read path doesn't change. (Edit page also sends base64.)
 
 2. **Server-side search + pagination**
    The approved feed currently loads ALL listings and filters/searches client-side
@@ -20,13 +20,10 @@ The next priorities target production-readiness and scale:
    API via query params (the typed filters already map cleanly); add listing views
    tracking while there. Required before the catalogue grows.
 
-3. **Listing edit page**
-   The one broken UX in the account area: "Edit" on My Listings links to `/add-listing`.
-   Build a dedicated edit form hitting `PATCH /listings/:id` (incl. `details`), reusing
-   `CategoryFields`. Completes seller listing management.
+3. **Footer with trust signals** (see Current Sprint)
 
-   Runners-up: 401 auto-logout + refresh-token rotation; Footer with trust signals;
-   responsive pass (375–1440px); WhatsApp on SellerProfilePage.
+   Runners-up: 401 auto-logout + refresh-token rotation; responsive pass
+   (375–1440px); WhatsApp on SellerProfilePage.
 
 ---
 
@@ -77,6 +74,19 @@ The next priorities target production-readiness and scale:
 ---
 
 ## Completed
+
+✓ Phase 5.6 — Edit Listing + Owner Controls (2026-06-17)
+  ✓ Dedicated /edit-listing/:id (RequireAuth): preloads general + category-specific
+    fields from details; category locked; reuses Add Listing cards + CategoryFields
+  ✓ Images: reuse existing + add/remove/reorder (cover = first); 1–10 (Jobs/Services 0–10)
+  ✓ Saves via PATCH (never creates); success message; redirect to My Listings;
+    editing a rejected listing resubmits it (→ pending)
+  ✓ PATCH /listings/:id extended: details + images (replace set, min-count enforced) + status pending
+  ✓ Owner controls on listing detail (owner only): Edit / Mark Sold / Archive / Delete + status chip
+  ✓ Public/non-owner: only Contact / WhatsApp / Save (new Save button); admin moderation stays in dashboard
+  ✓ My Listings Edit → /edit-listing/:id; adapter exposes userId for ownership checks
+  ✓ Security: backend 401/403/200 on PATCH/DELETE; client Unauthorized notice; owner can't self-approve pending
+  ✓ Verified (13/13 edit-endpoint checks) + npm build passes
 
 ✓ Phase 5.5 — Admin System Completion (2026-06-17)
   ✓ Dashboard shows all 10 live metrics (added hidden + featuredPending to /stats)

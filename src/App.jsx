@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import CategoryPage from './pages/CategoryPage';
 import ListingDetailPage from './pages/ListingDetailPage';
 import AddListingPage from './pages/AddListingPage';
+import EditListingPage from './pages/EditListingPage';
 import LoginPage from './pages/LoginPage';
 import AllListingsPage from './pages/AllListingsPage';
 import DashboardPage from './pages/DashboardPage';
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/category/:slug"    element={<CategoryPage />} />
           <Route path="/listing/:id"       element={<ListingDetailPage />} />
           <Route path="/add-listing"       element={<RequireAuth><AddListingPage /></RequireAuth>} />
+          <Route path="/edit-listing/:id"  element={<RequireAuth><EditListingPage /></RequireAuth>} />
           <Route path="/login"             element={<LoginPage />} />
           <Route path="/listings"          element={<AllListingsPage />} />
           <Route path="/browse"            element={<AllListingsPage />} />
