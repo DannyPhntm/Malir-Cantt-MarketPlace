@@ -1,0 +1,137 @@
+// Malir Cantt Marketplace — database schema (Phase 5.1)
+//
+// SQLite for local dev; the column/table names are snake_case (production
+// convention) while the JS layer uses camelCase via @map / @@map.
+//
+// To move to Postgres: change `provider` to "postgresql", point DATABASE_URL at
+// the Postgres URL, and the String status/type fields below can be promoted to
+// native enums (SQLite does not support enums, so they are validated in the app
+// layer — see src/validators/schemas.js for the allowed values).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users ────────────────────────────────────────────────────────────────────
+model User {
+  id               Int      @id @default(autoincrement())
+  name             String
+  email            String   @unique
+  passwordHash     String   @map("password_hash")
+  phone            String
+  canttPassNumber  String?  @map("cantt_pass_number")
+  residentLocation String   @map("resident_location")
+  accountType      String   @default("personal") @map("account_type") // personal | business
+  role             String   @default("user") // user | admin
+  businessVerified Boolean  @default(false) @map("business_verified")
+  emailVerified    Boolean  @default(false) @map("email_verified")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  listings        Listing[]
+  businessAccount BusinessAccount?
+  savedListings   SavedListing[]
+
+  @@map("users")
+}
+
+// ── Listings ─────────────────────────────────────────────────────────────────
+model Listing {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @map("user_id")
+  title             String
+  description       String
+  category          String // vehicles | technology | property | furniture | jobs | services | gym | shoes
+  price             Int // stored in PKR (whole rupees)
+  featuredRequested Boolean  @default(false) @map("featured_requested")
+  featuredActive    Boolean  @default(false) @map("featured_active")
+  status            String   @default("pending") // pending | approved | rejected | sold | hidden
+  // Category-specific attributes (make/model/year, bedrooms, foodType, …) stored
+  // as a JSON string — the set of fields varies by category (see categoryConfig).
+  details           String?
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images  ListingImage[]
+  savedBy SavedListing[]
+
+  @@index([userId])
+  @@index([category])
+  @@index([status])
+  @@map("listings")
+}
+
+// ── Saved listings (favourites) ──────────────────────────────────────────────
+model SavedListing {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  listingId Int      @map("listing_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@map("saved_listings")
+}
+
+// ── Listing images ───────────────────────────────────────────────────────────
+// Count rule (min 1 for all categories except jobs/services, max 10) is enforced
+// at the API validation layer — see listingCreateSchema in src/validators.
+model ListingImage {
+  id           Int    @id @default(autoincrement())
+  listingId    Int    @map("listing_id")
+  imageUrl     String @map("image_url")
+  displayOrder Int    @default(0) @map("display_order")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_images")
+}
+
+// ── Business accounts ────────────────────────────────────────────────────────
+// One-to-one with User. `paymentStatus` mirrors the frontend premiumConfig:
+// not_required (billing disabled) | unpaid | paid.
+model BusinessAccount {
+  id            Int     @id @default(autoincrement())
+  userId        Int     @unique @map("user_id")
+  businessName  String  @map("business_name")
+  paymentStatus String  @default("not_required") @map("payment_status")
+  approved      Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("business_accounts")
+}
+
+// ── Email verification codes ─────────────────────────────────────────────────
+model EmailVerificationCode {
+  id        Int      @id @default(autoincrement())
+  email     String
+  code      String
+  expiresAt DateTime @map("expires_at")
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email])
+  @@map("email_verification_codes")
+}
+
+// ── Password reset codes ─────────────────────────────────────────────────────
+model PasswordResetCode {
+  id        Int      @id @default(autoincrement())
+  email     String
+  code      String
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email])
+  @@map("password_reset_codes")
+}

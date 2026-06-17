@@ -1,0 +1,41 @@
+/* ── Category-specific fields grid ─────────────────────────────────────────── */
+.catfields__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+.catfields__full {
+  grid-column: 1 / -1;
+}
+
+/* ── Animated form body (revealed after category selection) ─────────────────── */
+.catfields__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ── Category select size ───────────────────────────────────────────────────── */
+.form-select--lg {
+  height: 52px;
+  font-size: var(--text-base);
+}
+
+/* ── Prompt text shown before category is selected ──────────────────────────── */
+.catfields__prompt {
+  font-style: italic;
+  color: var(--color-muted);
+  margin-top: var(--space-2);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .catfields__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .catfields__full {
+    grid-column: 1;
+  }
+}

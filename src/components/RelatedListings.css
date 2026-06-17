@@ -1,0 +1,67 @@
+/* ── You May Also Like / Related listings ───────────────────────────────────── */
+.related {
+  background: var(--color-white);
+  border-top: 1px solid var(--color-border-soft);
+  padding: var(--space-12) var(--space-6) var(--space-20);
+}
+
+.related__inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.related__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-8);
+}
+
+.related__heading {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+  letter-spacing: var(--ls-snug);
+}
+
+.related__view-all {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary);
+  transition: color var(--duration-fast) var(--ease-default);
+}
+
+.related__view-all:hover {
+  color: var(--color-primary-hover);
+}
+
+.related__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-6);
+}
+
+@media (max-width: 1024px) {
+  .related__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .related {
+    padding: var(--space-10) var(--space-5) var(--space-16);
+  }
+
+  .related__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+}
+
+@media (max-width: 480px) {
+  .related__grid {
+    gap: var(--space-3);
+  }
+}

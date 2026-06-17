@@ -1,0 +1,37 @@
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-full, 9999px);
+  font-family: var(--font-sans, Inter, sans-serif);
+  font-weight: 600;
+  white-space: nowrap;
+  color: #1a6b45;
+  background: rgba(26, 107, 69, 0.09);
+  border: 1px solid rgba(26, 107, 69, 0.2);
+  letter-spacing: 0.01em;
+}
+
+/* sm — listing cards */
+.verified-badge--sm {
+  font-size: 10px;
+  padding: 2px 7px 2px 5px;
+}
+
+.verified-badge--sm svg {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+}
+
+/* md — detail page / profile */
+.verified-badge--md {
+  font-size: 12px;
+  padding: 3px 10px 3px 7px;
+}
+
+.verified-badge--md svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}

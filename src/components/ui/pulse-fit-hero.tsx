@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -417,13 +418,13 @@ export function PulseFitHero({
               >
                 <span className="hero-tag-label">Popular:</span>
                 {popularTags.map((tag) => (
-                  <a
+                  <Link
                     key={tag}
-                    href={`/category/${tag.toLowerCase()}`}
+                    to={`/category/${tag.toLowerCase()}`}
                     className="hero-tag"
                   >
                     {tag}
-                  </a>
+                  </Link>
                 ))}
               </motion.div>
             )}
@@ -588,9 +589,9 @@ export function PulseFitHero({
             }
           >
             {[...programs, ...programs].map((program, index) => (
-              <a
+              <Link
                 key={index}
-                href={program.href || "#"}
+                to={program.href || "/"}
                 className="carousel-card"
                 onClick={program.onClick}
                 style={{ width: `${cardWidth}px`, height: "260px" }}
@@ -609,7 +610,7 @@ export function PulseFitHero({
                     <span className="carousel-card__count">{program.count}</span>
                   )}
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </motion.div>
