@@ -104,6 +104,7 @@ export default function AdminPage() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: load dashboard data on mount
   useEffect(() => { loadCore(); }, [loadCore]);
 
   // Listing list re-fetches whenever the status filter changes.
@@ -119,6 +120,7 @@ export default function AdminPage() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: re-fetch listings when the status filter changes
   useEffect(() => { loadListings(listingFilter); }, [listingFilter, loadListings]);
 
   const refreshStats = useCallback(async () => {

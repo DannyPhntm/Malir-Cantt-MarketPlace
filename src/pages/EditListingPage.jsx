@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useListings } from '../context/ListingsContext';
 import { useAuth } from '../context/AuthContext';
 import { CATEGORY_CONFIG } from '../data/categoryConfig';

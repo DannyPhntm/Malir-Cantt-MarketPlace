@@ -62,6 +62,7 @@ export function AuthProvider({ children }) {
   // Rehydrate the session on mount from the stored JWT.
   useEffect(() => {
     if (!getAuthToken()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: settles loading when there's no session to rehydrate
       setLoading(false);
       return;
     }
@@ -208,6 +209,7 @@ export function AuthProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- the hook is intentionally co-located with its provider; splitting would touch every consumer
 export function useAuth() {
   return useContext(AuthContext);
 }

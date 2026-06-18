@@ -119,7 +119,7 @@ export default function AddListingPage() {
     setImageFiles([]);
     setImagePreviews([]);
     setErrors(prev => ({ ...prev, images: '' }));
-  }, [form.category]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.category]);
 
   // Persist the draft (text + selections) whenever it changes, until submitted.
   useEffect(() => {

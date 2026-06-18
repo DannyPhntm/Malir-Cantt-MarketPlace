@@ -56,11 +56,13 @@ export default function Navbar() {
     navigate('/');
   };
 
-  // Pre-fill the mobile search from the current URL when the mobile menu opens
-  const currentUrlQuery = new URLSearchParams(location.search).get('q') || '';
+  // Pre-fill the mobile search from the current URL when the mobile menu opens.
   useEffect(() => {
-    if (menuOpen) setMobileQuery(currentUrlQuery);
-  }, [menuOpen]);
+    if (menuOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync the input to the current URL when the panel opens
+      setMobileQuery(new URLSearchParams(location.search).get('q') || '');
+    }
+  }, [menuOpen, location.search]);
 
   const closeMenu = () => {
     setMenuOpen(false);

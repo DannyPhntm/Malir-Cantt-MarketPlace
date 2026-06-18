@@ -34,6 +34,7 @@ export function FavoritesProvider({ children }) {
   // Resolve favourites whenever auth state settles.
   useEffect(() => {
     if (!isAuthenticated) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync favourites to guest storage when auth state settles
       setFavorites(readGuest());
       return;
     }
@@ -94,4 +95,5 @@ export function FavoritesProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- the hook is intentionally co-located with its provider; splitting would touch every consumer
 export const useFavorites = () => useContext(FavoritesContext);

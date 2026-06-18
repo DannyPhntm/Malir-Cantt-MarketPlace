@@ -217,6 +217,7 @@ export default function MyListingsPage() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: load the owner's listings on mount
   useEffect(() => { load(); }, [load]);
 
   const stats = useMemo(() => ({

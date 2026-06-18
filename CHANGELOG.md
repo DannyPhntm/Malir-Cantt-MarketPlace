@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-06-18 — Phase 5.9: Beta Launch Hardening
+
+Stability, polish, and production-readiness pass ahead of beta. **No new user-facing features**; existing functionality, layouts, and design language preserved. Frontend build passes; no new lint problems introduced.
+
+### Added
+- **App-level `ErrorBoundary`** (`src/components/ErrorBoundary.jsx`) — outermost wrapper in `main.jsx`. Catches any render crash below it and shows a branded recovery panel ("Back to Home") instead of white-screening the whole app. Design-token styled; no new dependencies.
+- **`lib/imageFallback.js`** — `IMG_FALLBACK` (inline branded SVG data URI) + `handleImgError`. Broken/expired image URLs swap to a branded panel once (loop-guarded) instead of the browser broken-image icon. Wired into `ListingDetailPage` (main image + thumbnails).
+- **`ListingCard` broken-image fallback** — `<img onError>` → for image-optional categories falls back to `ListingPlaceholder`; for required-image categories shows a neutral branded panel (`.listing-card__placeholder--fallback`).
+
+### Changed (performance)
+- **Route-level code splitting** — all pages except `HomePage` (the landing route) are now `React.lazy`-loaded behind a `<Suspense fallback={<LoadingState />}>`. Initial JS dropped from a single ~625 kB chunk to per-route chunks; the 500 kB chunk-size warning is resolved. CSS is split per route too (initial CSS ~39 kB vs ~161 kB).
+- **`usePublicStats` request de-duplication** — module-level cache + shared in-flight promise. The global Footer plus page consumers (Home, About) now make **one** `GET /stats/public` request instead of duplicating it on every mount/navigation. Stats are identical for all visitors, so the session-long cache is safe; failures aren't cached (retry allowed).
+
+### Fixed (lint — zero errors/warnings; `npm run lint` now exits 0)
+- **`eslint.config.js`** — ignore the `server` tree. `eslint .` previously crashed (`ERR_MODULE_NOT_FOUND`) descending into the vendored `server/ruflo` nested configs. This flat config targets the Vite frontend (browser globals) only.
+- **Real fixes (behaviour unchanged):**
+  - Removed unused `AnimatePresence` import (`EditListingPage`) and unused `setIsOpen` (`DashboardPage`); removed a stale `eslint-disable` directive (`AddListingPage`).
+  - Hoisted `ProfilePage`'s static `blankBusiness` object to module scope (`BLANK_BUSINESS`) — stable reference resolves two `exhaustive-deps` warnings.
+  - Memoised `AllListingsPage` `catFilterFields` with `useMemo([categoryFilter])` and added it to the filtering memo's deps — resolves two `exhaustive-deps` warnings; value identical, just a stable reference.
+  - `Navbar` mobile-search prefill effect: read the URL query inside the effect and depend on `location.search` — resolves the missing-dependency warning.
+- **Justified suppressions (intentional patterns, scoped `eslint-disable-next-line` + rationale):**
+  - `react-hooks/set-state-in-effect` (10) — genuine load/sync effects (session rehydrate, favourites/listings/dashboard/admin loads, URL→state sync, category-reset). These are the legitimate use of effects; restructuring them would add risk, not clarity.
+  - `react-refresh/only-export-components` (3) — `AuthContext` / `FavoritesContext` / `ListingsContext` co-locate their hook with the Provider; splitting into separate files would touch every consumer (a refactor, out of scope for this pass).
+
+### Audit (no changes needed)
+- **Routes / links** — every `Link`/`navigate` target resolves to a defined route; no broken static routes. `*` → `NotFoundPage` catches the rest.
+- **Loading / error / empty states** — listing-driven pages (Category, Listings, ListingDetail, MyListings, Saved, SellerProfile, Dashboard, Admin, EditListing) already have loading + error/empty states via `LoadingState` and context error flags; `ListingsContext` empties the list and surfaces `error` on API failure.
+- **Dead components** — `Categories.jsx`, `Hero.jsx`, `pulse-fit-hero-demo.tsx` are unused (not imported anywhere, tree-shaken from the bundle); left in place, not a broken-link risk.
+
+---
+
 ## 2026-06-18 — Phase 5.8: Rebrand to "People of Malir Cantt Bazaar"
 
 Branding-only update — **no UI redesign, no layout/functionality changes**. Renamed the product from "Malir Cantt Marketplace" to **People of Malir Cantt Bazaar** (tagline **Buy • Sell • Hire • Discover**; secondary description "The community marketplace for Malir Cantt residents."). All design tokens, colours, animations, components, and responsiveness preserved. "Malir Cantt" as a *location* is unchanged everywhere (listings, placeholders, seed data); only the *brand name* changed.

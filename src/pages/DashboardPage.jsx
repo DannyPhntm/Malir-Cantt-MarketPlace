@@ -137,7 +137,7 @@ function DashCard({ icon, title, desc, badge, soon, to, onClick }) {
 
 export default function DashboardPage() {
   const { userType, profile, businessStatus } = useAuth();
-  const { favorites, setIsOpen } = useFavorites();
+  const { favorites } = useFavorites();
 
   const [listings, setListings] = useState(null);
   const [loading, setLoading]   = useState(true);
@@ -156,6 +156,7 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: load the dashboard's listings on mount
   useEffect(() => { load(); }, [load]);
 
   const stats = useMemo(() => computeListingStats(listings || []), [listings]);

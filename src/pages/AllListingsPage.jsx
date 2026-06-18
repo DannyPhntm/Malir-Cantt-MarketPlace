@@ -125,15 +125,17 @@ export default function AllListingsPage() {
 
   const urlQuery = searchParams.get('q') || '';
   const [localQuery, setLocalQuery] = useState(urlQuery);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync the search box to the URL ?q= param
   useEffect(() => { setLocalQuery(urlQuery); }, [urlQuery]);
 
   // Reset category-specific filters when category changes
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: clear filters when the selected category changes
   useEffect(() => { setCatFilters({}); }, [categoryFilter]);
 
   // Autofocus the search box when landing on the page (no scroll jump).
   useEffect(() => { searchInputRef.current?.focus({ preventScroll: true }); }, []);
 
-  const catFilterFields = CAT_FILTER_CONFIG[categoryFilter] || [];
+  const catFilterFields = useMemo(() => CAT_FILTER_CONFIG[categoryFilter] || [], [categoryFilter]);
   const activeFilterCount = [priceMin, priceMax, locationFilter, ...Object.values(catFilters)].filter(Boolean).length;
 
   // The detail value for a field key (details first, legacy direct prop fallback).
@@ -195,7 +197,7 @@ export default function AllListingsPage() {
       if (sort === 'recently_added') return parseTimeAgo(a.timeAgo) - parseTimeAgo(b.timeAgo);
       return 0;
     });
-  }, [sort, categoryFilter, priceMin, priceMax, locationFilter, catFilters, localQuery, allListings]);
+  }, [sort, categoryFilter, priceMin, priceMax, locationFilter, catFilters, localQuery, allListings, catFilterFields]);
 
   const hasQuery = localQuery.trim().length > 0;
   const heading  = hasQuery ? `Results for "${localQuery.trim()}"` : 'All Listings';

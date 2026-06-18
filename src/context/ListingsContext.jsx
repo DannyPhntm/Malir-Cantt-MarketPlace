@@ -27,6 +27,7 @@ export function ListingsProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: load listings from the backend on mount
     refresh();
   }, [refresh]);
 
@@ -70,6 +71,7 @@ export function ListingsProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- the hook is intentionally co-located with its provider; splitting would touch every consumer
 export function useListings() {
   return useContext(ListingsContext);
 }

@@ -286,6 +286,10 @@ function SectionCard({ title, children, className = '' }) {
 
 /* ── Page ────────────────────────────────────────────────────────────────────── */
 
+// Business fields default to empty if not in profile. Module-level so the
+// reference is stable across renders (no need to list it as a hook dependency).
+const BLANK_BUSINESS = { businessName: '', businessCategory: '', businessArea: '' };
+
 export default function ProfilePage() {
   const { profile, updateProfile, userType } = useAuth();
 
@@ -295,9 +299,7 @@ export default function ProfilePage() {
   const [saveError, setSaveError] = useState('');
   const [errors,    setErrors]    = useState({});
 
-  // Business fields default to empty if not in profile
-  const blankBusiness = { businessName: '', businessCategory: '', businessArea: '' };
-  const [form, setForm] = useState({ ...blankBusiness, ...profile });
+  const [form, setForm] = useState({ ...BLANK_BUSINESS, ...profile });
 
   const initials = (profile.name || 'U')
     .split(' ')
@@ -307,13 +309,13 @@ export default function ProfilePage() {
     .toUpperCase();
 
   const handleEdit = useCallback(() => {
-    setForm({ ...blankBusiness, ...profile });
+    setForm({ ...BLANK_BUSINESS, ...profile });
     setErrors({});
     setIsEditing(true);
   }, [profile]);
 
   const handleCancel = useCallback(() => {
-    setForm({ ...blankBusiness, ...profile });
+    setForm({ ...BLANK_BUSINESS, ...profile });
     setErrors({});
     setIsEditing(false);
   }, [profile]);
