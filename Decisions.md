@@ -241,3 +241,38 @@ There is deliberately no "block admin" guard to maintain. Admin can't be reached
 
 ### Query booleans are parsed, not coerced
 `z.coerce.boolean()` is wrong for URL query flags: `Boolean('false')` is `true`, so `?featured=false` silently meant `true`. Replaced with an explicit `'true' | 'false'` → boolean transform. The Featured tab depends on `featured=false` (requested-but-not-active), and the latent bug also affected the existing `featured` filter — so the fix corrects both.
+
+---
+
+## 2026-06-17 — Phase 5.6: Edit Listing + Owner Controls
+
+### Dedicated Edit page reuses Add Listing's parts — not a shared mega-form
+`AddListingPage` is a large, self-contained form (draft persistence, image compression, live preview, business-required modal, featured tier, success/"post another"). Rather than refactor it into a shared component (high blast radius), `EditListingPage` is its own page that reuses the *pieces* that matter — `AddListingPage.css` cards/inputs and the `CategoryFields` component — with edit-only logic. This kept the visual language identical while isolating edit behaviour, honouring "reuse where possible" without a risky redesign.
+
+### Category is locked on edit
+Editing a listing cannot change its category. A category change would swap the entire category-specific field set, re-trigger the business-only gate (e.g. Food), and change image-count rules — turning a simple edit into a re-creation. Locking it (the schema has no `category` field, so an injected one is stripped) matches how most marketplaces behave and keeps edit safe and predictable.
+
+### Image edits replace the whole set; min-count enforced in the controller
+`PATCH /listings/:id` takes the full ordered `images` array and replaces the set atomically (`deleteMany` + `create`). One operation cleanly expresses add, remove, and reorder without diffing. The min-count rule (1 except Jobs/Services) lives in the controller, not the zod schema, because it depends on the listing's (unchangeable) category, which the schema can't see.
+
+### Editing a rejected listing resubmits it; owners still can't self-approve
+A non-admin owner may move `rejected → pending` (resubmit after fixing the reason) but cannot set `approved` on their own pending listing. Moderation stays admin-only; the edit flow just re-enters the queue. This satisfies the "rejected: edit and resubmit" rule without weakening the approval gate.
+
+### Owner controls are gated on the detail page; admin moderation stays in the dashboard
+The listing detail page shows manage controls only when `user.id === listing.userId` (true owner). Admins do **not** get owner buttons there — admin moderation lives in the Admin Dashboard, so an admin viewing someone else's listing sees the normal buyer view. This keeps two concerns separate (owner self-service vs. moderation) and avoids leaking management UI onto public pages. The adapter exposes `userId` purely for this check; the backend remains the real authorization gate (PATCH/DELETE enforce owner-or-admin → 401/403).
+
+---
+
+## 2026-06-18 — Phase 5.7: Trust & Information System
+
+### A separate public stats endpoint, not a relaxed admin one
+The homepage/footer need a few aggregates, but `/stats` is admin-only and returns moderation-sensitive counts (pending/rejected/hidden, business-pending). Rather than loosen it, a dedicated `GET /stats/public` returns only safe public aggregates (active listings, users, verified businesses, category count, per-category approved counts). Least privilege: the public surface can never accidentally expose the moderation queue.
+
+### Real counts with a graceful placeholder — never hardcode, never fabricate
+All homepage/footer/about numbers come from the live endpoint via `usePublicStats`. Before data arrives the UI shows `'—'` rather than a guessed number, and there is no fallback to fake values. This directly encodes the "real trust signals / no fabricated numbers / no fake avatars" rule — the marketplace only ever shows counts it can stand behind.
+
+### Contact submissions are persisted, not emailed
+With no mail provider for outbound yet, contact-form messages are written to a `ContactMessage` table (and logged in dev) instead of being sent somewhere. Persistence is durable and queryable (a future admin inbox or a digest can read it), and it sits behind the same kind of seam as the emailer — when transport is wired, the stored row can be forwarded without changing the form or endpoint.
+
+### List keys must be stable identity, not display value
+The duplicate-stats bug came from keying the hero trust stats by `stat.value`. During load all four values are the same placeholder (`'—'`), so the keys collided and React mis-reconciled into duplicate nodes once real values arrived. The fix — key by the unique `stat.label` — is the general rule: React keys must identify *which item* this is, never the rendered value (which can repeat or change). Applies to any future list keyed off display data.

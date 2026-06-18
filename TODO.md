@@ -5,25 +5,32 @@
 ## Next 3 Priorities (recommended)
 
 The backend is live end-to-end (DB, JWT auth + roles, listings CRUD + edit, admin
-moderation, saved listings, search/details, Food category — Phases 5.1 → 5.6).
-The next priorities target production-readiness and scale:
+moderation, saved listings, search/details, Food, public stats, contact —
+Phases 5.1 → 5.7). The next priorities target production-readiness and scale:
 
 1. **Image upload + hosting** — biggest production blocker
    Listing images are stored as base64 data-URLs inside the DB (`listing_images.image_url`),
    which bloats payloads/storage and won't scale. Add a real store (S3 / Supabase
    Storage / Cloudinary) + an upload endpoint in front of `createListing`; the column
-   already holds a URL, so the read path doesn't change. (Edit page also sends base64.)
+   already holds a URL, so the read path doesn't change. (Add + Edit pages send base64.)
 
-2. **Server-side search + pagination**
+2. **Server-side search + pagination + views tracking**
    The approved feed currently loads ALL listings and filters/searches client-side
-   (`ListingsContext` + `AllListingsPage`). Move search/filter/sort/pagination to the
-   API via query params (the typed filters already map cleanly); add listing views
-   tracking while there. Required before the catalogue grows.
+   (`ListingsContext` + `AllListingsPage`) — and `/stats/public` `categoryCounts` /
+   homepage sections also lean on the full feed. Move search/filter/sort/pagination to
+   the API via query params (the typed filters already map cleanly) and add a real
+   listing `views` counter (currently always 0). Required before the catalogue grows.
 
-3. **Footer with trust signals** (see Current Sprint)
+3. **Production email delivery + contact inbox**
+   Two loops are stored-but-not-sent: verification/reset codes only print to the server
+   console without SMTP, and contact-form messages are persisted (`ContactMessage`) but
+   go nowhere. Wire real SMTP creds (`server/.env` `SMTP_*`), and surface contact
+   messages (an admin inbox tab reading `ContactMessage`, or a forwarding step). Closes
+   the email + contact systems end-to-end.
 
    Runners-up: 401 auto-logout + refresh-token rotation; responsive pass
-   (375–1440px); WhatsApp on SellerProfilePage.
+   (375–1440px); WhatsApp on SellerProfilePage; remove the stray `server/ruflo/`
+   vendored clone (now gitignored).
 
 ---
 
