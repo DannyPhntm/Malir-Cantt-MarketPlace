@@ -10,6 +10,7 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import PageTransition from '../components/PageTransition';
 import RelatedListings from '../components/RelatedListings';
 import LoadingState from '../components/LoadingState';
+import { handleImgError } from '../lib/imageFallback';
 import './ListingDetailPage.css';
 
 function PhoneIcon() {
@@ -115,6 +116,7 @@ export default function ListingDetailPage() {
   // can view their own listing immediately after posting).
   useEffect(() => {
     let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset to the loading state before fetching the listing by id
     setStatus('loading');
     setPhoneRevealed(false);
     setActiveThumb(0);
@@ -257,6 +259,7 @@ export default function ListingDetailPage() {
                     src={images[activeThumb]}
                     alt={listing.title}
                     className="detail__image"
+                    onError={handleImgError}
                   />
                   <div className="detail__image-zoom-hint" aria-hidden="true">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -280,7 +283,7 @@ export default function ListingDetailPage() {
                         aria-label={`View photo ${i + 1}`}
                         aria-pressed={i === activeThumb}
                       >
-                        <img src={src} alt="" loading="lazy" />
+                        <img src={src} alt="" loading="lazy" onError={handleImgError} />
                       </button>
                     ))}
                   </div>

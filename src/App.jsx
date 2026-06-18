@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
@@ -5,22 +6,28 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FavoritesDrawer from './components/FavoritesDrawer';
 import ScrollToTop from './components/ScrollToTop';
+import LoadingState from './components/LoadingState';
 import HomePage from './pages/HomePage';
-import CategoryPage from './pages/CategoryPage';
-import ListingDetailPage from './pages/ListingDetailPage';
-import AddListingPage from './pages/AddListingPage';
-import EditListingPage from './pages/EditListingPage';
-import LoginPage from './pages/LoginPage';
-import AllListingsPage from './pages/AllListingsPage';
-import DashboardPage from './pages/DashboardPage';
-import MyListingsPage from './pages/MyListingsPage';
-import SavedListingsPage from './pages/SavedListingsPage';
-import ProfilePage from './pages/ProfilePage';
-import SellerProfilePage from './pages/SellerProfilePage';
-import AdminPage from './pages/AdminPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
-import NotFoundPage from './pages/NotFoundPage';
+
+// Route-level code splitting. HomePage stays eager (it's the landing route, so
+// there's no point deferring it). Every other page is loaded on demand, which
+// keeps the initial bundle small and speeds up first paint. The Suspense
+// fallback below covers the brief chunk fetch on first visit to each route.
+const CategoryPage = lazy(() => import('./pages/CategoryPage'));
+const ListingDetailPage = lazy(() => import('./pages/ListingDetailPage'));
+const AddListingPage = lazy(() => import('./pages/AddListingPage'));
+const EditListingPage = lazy(() => import('./pages/EditListingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const AllListingsPage = lazy(() => import('./pages/AllListingsPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const MyListingsPage = lazy(() => import('./pages/MyListingsPage'));
+const SavedListingsPage = lazy(() => import('./pages/SavedListingsPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SellerProfilePage = lazy(() => import('./pages/SellerProfilePage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Gate a route behind authentication. Unauthenticated users are sent to the
 // login page with a `redirect` param so they return here after signing in.
@@ -58,6 +65,7 @@ export default function App() {
       <ScrollToTop />
       <Navbar />
       <FavoritesDrawer />
+      <Suspense fallback={<LoadingState label="Loading…" />}>
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
           <Route path="/"                  element={<HomePage />} />
@@ -79,6 +87,7 @@ export default function App() {
           <Route path="*"                  element={<NotFoundPage />} />
         </Routes>
       </AnimatePresence>
+      </Suspense>
       <Footer />
     </>
   );

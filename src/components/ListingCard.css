@@ -62,6 +62,12 @@
   background: linear-gradient(150deg, #0d2a1a 0%, #15533a 58%, #1f7d52 100%);
 }
 
+/* Neutral fallback — shown when a required-category image URL fails to load,
+   so a broken/expired link never renders the browser broken-image icon. */
+.listing-card__placeholder--fallback {
+  background: linear-gradient(150deg, #1d3a2a 0%, #244736 60%, #2c543f 100%);
+}
+
 .listing-card__placeholder-tag {
   font-family: var(--font-sans);
   font-size: var(--text-xs);

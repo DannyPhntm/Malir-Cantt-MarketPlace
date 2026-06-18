@@ -96,16 +96,20 @@ When uncertain, preserve existing functionality and ask for clarification.
 ## Provider Tree (`src/main.jsx`)
 
 ```
-<BrowserRouter>
-  <AuthProvider>          ← src/context/AuthContext.jsx
-    <ListingsProvider>    ← src/context/ListingsContext.jsx
-      <FavoritesProvider> ← src/context/FavoritesContext.jsx
-        <App />
-      </FavoritesProvider>
-    </ListingsProvider>
-  </AuthProvider>
-</BrowserRouter>
+<ErrorBoundary>            ← src/components/ErrorBoundary.jsx (app crash guard)
+  <BrowserRouter>
+    <AuthProvider>          ← src/context/AuthContext.jsx
+      <ListingsProvider>    ← src/context/ListingsContext.jsx
+        <FavoritesProvider> ← src/context/FavoritesContext.jsx
+          <App />
+        </FavoritesProvider>
+      </ListingsProvider>
+    </AuthProvider>
+  </BrowserRouter>
+</ErrorBoundary>
 ```
+
+- **`ErrorBoundary`** (Phase 5.9) is the outermost wrapper — a class component that catches any render error below it and shows a branded recovery panel ("Back to Home") instead of white-screening the app. Inline-styled with design tokens; no new deps.
 
 Order matters — AuthProvider must be outermost so ListingsProvider and AddListingPage can call `useAuth()`.
 
@@ -114,6 +118,7 @@ Order matters — AuthProvider must be outermost so ListingsProvider and AddList
 ## Routing (`src/App.jsx`)
 
 - Uses `useLocation` + `<AnimatePresence mode="wait" initial={false}>` wrapping `<Routes location={location} key={location.pathname}>` — enables page transition animations on route change
+- **Route-level code splitting** (Phase 5.9): every page **except `HomePage`** (the eager landing route) is `React.lazy(() => import(...))`. The `AnimatePresence`/`Routes` block is wrapped in `<Suspense fallback={<LoadingState />}>` so first visit to a not-yet-loaded route shows the standard spinner. Keeps the initial bundle small (per-route JS + CSS chunks); no chunk exceeds the 500 kB warning threshold.
 - **`<ScrollToTop />`** rendered before Routes — `useEffect` on `pathname` calls `window.scrollTo({ top:0, behavior:'instant' })`
 - **`RequireAuth`** wrapper (defined in `App.jsx`) — gates protected routes; when `!isAuthenticated` it returns `<Navigate to="/login?redirect=<encoded pathname+search>" replace />`. Wraps `/add-listing`, `/dashboard`, `/my-listings`, `/saved-listings`, `/profile`. Both guards wait for `loading` (session rehydration) before deciding.
 - **`RequireAdmin`** wrapper (Phase 5.2.4) — like `RequireAuth` but also requires `user.role === 'admin'`; non-admins redirect to `/`. Wraps `/admin`
@@ -245,7 +250,8 @@ Single source of truth for monetisation / verification / admin-approval constant
 - **`listingsApi.js`** (Phase 5.2.2, +5.2.5, +5.6) — `list(filters)` / `get(id)` / `create(payload)` / `mine()` / `update(id, changes)` / `remove(id)`. `update` (PATCH) now also carries `details`, the full `images` set (add/remove/reorder), and `status` (incl. resubmit). Consumed by `ListingsContext`, `MyListingsPage`, `EditListingPage`, and `ListingDetailPage` owner controls
 - **`savedApi.js`** (Phase 5.2.5) — `list()` / `add(listingId)` / `remove(listingId)` (all auth). Consumed by `FavoritesContext`
 - **`adminApi.js`** (Phase 5.2.4, +5.5) — moderation + dashboard: `getStats()`, `listUsers(search?)`, `listListings(status)`, `listFeaturedRequests()`, `setListingStatus(id, body)`, `deleteListing(id)`, `listBusinessAccounts(approved?)`, `decideBusiness(id, body)`. Consumed by `AdminPage`. Enforced server-side via JWT + `requireRole('admin')`.
-- **`statsApi.js`** (Phase 5.7) — `getPublicStats()` → `GET /stats/public` (no auth). Consumed via `hooks/usePublicStats.js` by HomePage, AboutPage, and Footer.
+- **`statsApi.js`** (Phase 5.7) — `getPublicStats()` → `GET /stats/public` (no auth). Consumed via `hooks/usePublicStats.js` by HomePage, AboutPage, and Footer. **Phase 5.9**: `usePublicStats` now **module-level caches** the first successful result and **shares the in-flight promise**, so the global Footer + page consumers make one request instead of duplicating it per mount/navigation (stats are identical for every visitor).
+- **`lib/imageFallback.js`** (Phase 5.9) — `IMG_FALLBACK` (inline branded SVG data URI) + `handleImgError(e)` — attach via `<img onError>` to swap a broken/expired image URL for the branded panel once (guards against fallback loops). Used by `ListingDetailPage` (main image + thumbnails). `ListingCard` has its own inline `--fallback` placeholder.
 - **`contactApi.js`** (Phase 5.7) — `send(payload)` → `POST /contact` (public; persisted to `ContactMessage`). Consumed by `ContactPage`.
 - **`listingAdapter.js`** (Phase 5.2.2) — `adaptListing` / `adaptListings`: backend listing → legacy UI shape (see ListingsContext)
 - **`emailService.js`** — legacy mock email sender (no longer used by LoginPage after Phase 5.2.1; superseded by the backend)
@@ -294,6 +300,7 @@ Single source of truth for monetisation / verification / admin-approval constant
 - **Heart pop animation**: `.heart-pop` CSS class for 600ms — `@keyframes heartPop` scales 1 → 1.5 → 0.85 → 1.12 → 1
 - Clicking the card calls `addRecentlyViewed(listing)` from `services/recentlyViewedService.js` (dedupe + move-to-front, cap 20)
 - **Image-optional fallback** (Phase 4.4.5): when `!listing.image` and `categorySlug` is `jobs` or `services` (`OPTIONAL_IMAGE_CATEGORIES`), renders `ListingPlaceholder` (a branded gradient panel — tagline + icon tile + type pill from `condition`/`serviceType`) instead of `<img>`. Panel is `position:absolute; inset:0` inside the same 4:3 `.listing-card__image-wrap`, so heights/grid/hover/badge stay identical. Required-image categories keep the `<img>` behaviour
+- **Broken-image fallback** (Phase 5.9): the `<img>` carries `onError` → `imgFailed` state. For image-optional categories it falls back to `ListingPlaceholder`; for required-image categories it shows a neutral branded panel (`.listing-card__placeholder--fallback`, image-off icon + category pill). No broken-image browser icon ever renders.
 - **Footer row** (`.listing-card__footer`): flex row, `justify-content: space-between` — left: `listing-card__time`, right: `<VerifiedBadge size="sm">` when `listing.seller?.isVerified` is true
 
 ### VerifiedBadge (`VerifiedBadge.jsx` + `VerifiedBadge.css`)

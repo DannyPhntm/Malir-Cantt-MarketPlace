@@ -53,8 +53,13 @@ function ListingPlaceholder({ listing }) {
 export default function ListingCard({ listing, showSeller = false }) {
   const { toggle, isFavorited, setIsOpen } = useFavorites();
   const [popping, setPopping] = useState(false);
+  // Track image load failure so a broken/expired URL falls back to a branded
+  // panel instead of the browser's broken-image icon.
+  const [imgFailed, setImgFailed] = useState(false);
   const favorited = isFavorited(listing.id);
-  const showPlaceholder = !listing.image && OPTIONAL_IMAGE_CATEGORIES.includes(listing.categorySlug);
+  const showPlaceholder =
+    (!listing.image || imgFailed) && OPTIONAL_IMAGE_CATEGORIES.includes(listing.categorySlug);
+  const showBrokenFallback = imgFailed && !showPlaceholder;
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -79,12 +84,24 @@ export default function ListingCard({ listing, showSeller = false }) {
       <div className="listing-card__image-wrap">
         {showPlaceholder ? (
           <ListingPlaceholder listing={listing} />
+        ) : showBrokenFallback ? (
+          <div className="listing-card__placeholder listing-card__placeholder--fallback">
+            <div className="listing-card__placeholder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="m21 15-5-5L5 21" />
+              </svg>
+            </div>
+            <span className="listing-card__placeholder-pill">{listing.category}</span>
+          </div>
         ) : (
           <img
             src={listing.image}
             alt={listing.title}
             className="listing-card__image"
             loading="lazy"
+            onError={() => setImgFailed(true)}
           />
         )}
         {listing.featured && (
