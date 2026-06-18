@@ -50,6 +50,18 @@ export const userListQuerySchema = z.object({
   search: z.string().trim().max(100).optional(),
 });
 
+/* ── Contact form ────────────────────────────────────────────────────────────── */
+
+const CONTACT_CATEGORIES = ['general', 'business', 'featured', 'bug', 'scam', 'suggestion'];
+
+export const contactSchema = z.object({
+  name: z.string().trim().min(2, 'Name is required.').max(100),
+  email,
+  subject: z.string().trim().min(3, 'Subject is required.').max(150),
+  message: z.string().trim().min(10, 'Message must be at least 10 characters.').max(2000),
+  category: z.enum(CONTACT_CATEGORIES).optional().default('general'),
+});
+
 export const verifyEmailSchema = z.object({ email, code });
 
 export const resendVerificationSchema = z.object({ email });

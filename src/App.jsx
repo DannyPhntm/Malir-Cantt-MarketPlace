@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import FavoritesDrawer from './components/FavoritesDrawer';
 import ScrollToTop from './components/ScrollToTop';
 import HomePage from './pages/HomePage';
@@ -17,6 +18,8 @@ import SavedListingsPage from './pages/SavedListingsPage';
 import ProfilePage from './pages/ProfilePage';
 import SellerProfilePage from './pages/SellerProfilePage';
 import AdminPage from './pages/AdminPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 // Gate a route behind authentication. Unauthenticated users are sent to the
@@ -70,10 +73,13 @@ export default function App() {
           <Route path="/saved-listings"    element={<RequireAuth><SavedListingsPage /></RequireAuth>} />
           <Route path="/profile"           element={<RequireAuth><ProfilePage /></RequireAuth>} />
           <Route path="/seller/:sellerName" element={<SellerProfilePage />} />
+          <Route path="/about"             element={<AboutPage />} />
+          <Route path="/contact"           element={<ContactPage />} />
           <Route path="/admin"             element={<RequireAdmin><AdminPage /></RequireAdmin>} />
           <Route path="*"                  element={<NotFoundPage />} />
         </Routes>
       </AnimatePresence>
+      <Footer />
     </>
   );
 }

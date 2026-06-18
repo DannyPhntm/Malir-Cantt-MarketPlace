@@ -439,7 +439,7 @@ export function PulseFitHero({
                 style={{ gap: "6px 20px", paddingTop: "4px" }}
               >
                 {trustStats.map((stat, i) => (
-                  <React.Fragment key={stat.value}>
+                  <React.Fragment key={stat.label}>
                     {i > 0 && (
                       <span
                         aria-hidden="true"

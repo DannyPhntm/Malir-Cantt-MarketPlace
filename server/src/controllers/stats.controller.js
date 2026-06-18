@@ -1,5 +1,35 @@
 import prisma from '../lib/prisma.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { CATEGORIES } from '../lib/constants.js';
+
+/* GET /api/stats/public — public marketplace stats for the homepage / footer.
+   Exposes only safe aggregates (no moderation/pending counts). */
+export const getPublicStats = asyncHandler(async (req, res) => {
+  const [users, activeListings, verifiedBusinesses, grouped] = await Promise.all([
+    prisma.user.count(),
+    prisma.listing.count({ where: { status: 'approved' } }),
+    prisma.user.count({ where: { businessVerified: true } }),
+    prisma.listing.groupBy({
+      by: ['category'],
+      where: { status: 'approved' },
+      _count: { _all: true },
+    }),
+  ]);
+
+  // Start every category at 0 so the UI always has a full set.
+  const categoryCounts = Object.fromEntries(CATEGORIES.map((c) => [c, 0]));
+  for (const g of grouped) categoryCounts[g.category] = g._count._all;
+
+  res.json({
+    stats: {
+      activeListings,
+      users,
+      verifiedBusinesses,
+      categories: CATEGORIES.length,
+      categoryCounts,
+    },
+  });
+});
 
 /* GET /api/stats — aggregate counts for the admin dashboard. */
 export const getStats = asyncHandler(async (req, res) => {

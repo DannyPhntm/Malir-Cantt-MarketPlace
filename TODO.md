@@ -29,11 +29,6 @@ The next priorities target production-readiness and scale:
 
 ## Current Sprint (Phase 4)
 
-□ Footer with trust signals
-  Every real marketplace needs a footer: About, Safety Tips, Community Guidelines,
-  Contact. Builds credibility and reinforces the Malir Cantt identity.
-  Suggested sections: brand blurb + nav links + social links + safety disclaimer.
-
 □ WhatsApp contact on SellerProfilePage
   WhatsApp Seller is live on ListingDetailPage (Phase 4.1). Bring the same
   `toWhatsAppNumber()` + wa.me deep link to the SellerProfilePage contact card
@@ -74,6 +69,18 @@ The next priorities target production-readiness and scale:
 ---
 
 ## Completed
+
+✓ Phase 5.7 — Trust & Information System (2026-06-18)
+  ✓ Public stats endpoint GET /stats/public (activeListings/users/verifiedBusinesses/
+    categories/categoryCounts); statsApi + usePublicStats hook
+  ✓ Homepage stats now dynamic (hero trust stats + real per-category carousel counts);
+    removed hardcoded numbers / fake social proof
+  ✓ About page (/about) — info blocks + real stats strip
+  ✓ Contact page (/contact) — inquiry types + form → POST /contact (ContactMessage
+    model + migration; persisted + dev-logged; no email integration)
+  ✓ Recently Added homepage section (latest approved, reuses Featured layout)
+  ✓ Footer (App-wide) with About/Contact links + real trust signals + safety note
+  ✓ Verified (contact 201/422, public stats live) + npm build passes
 
 ✓ Phase 5.6 — Edit Listing + Owner Controls (2026-06-17)
   ✓ Dedicated /edit-listing/:id (RequireAuth): preloads general + category-specific

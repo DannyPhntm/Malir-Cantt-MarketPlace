@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-06-18 — Phase 5.7: Trust & Information System
+
+Added About + Contact pages, a site Footer, and replaced hardcoded homepage numbers with **live backend data**. **No UI redesign** — new pages reuse the existing hero/card/form patterns and design tokens; Recently Added reuses the Featured Listings layout.
+
+### Added
+- **Public stats endpoint** — `GET /api/stats/public` (no auth): `{ activeListings, users, verifiedBusinesses, categories, categoryCounts }`. Admin `/stats` stays role-gated; this exposes only safe aggregates. `services/statsApi.js` + `hooks/usePublicStats.js`.
+- **About page** (`/about`, `AboutPage.jsx` + `.css`) — hero, a real-stats strip, "what it is", a feature grid (safe community trade, resident-focused, business opportunities, verified business accounts, home businesses, featured listings), and a future-vision block with CTAs.
+- **Contact page** (`/contact`, `ContactPage.jsx` + `.css`) — inquiry types (general / business / featured / bug / scam / suggestion), email + WhatsApp placeholders, response expectations, and a contact form (Name / Email / Subject / Message + reason). Submits to a new **`POST /api/contact`** which validates (zod) and **persists** to a new `ContactMessage` table (migration `add_contact_messages`) + logs in dev. No external email integration.
+- **Recently Added** homepage section (`RecentlyAdded.jsx`) — latest approved listings (newest first, max 8) via `useListings`; reuses the Featured Listings layout/`ListingCard` (thumbnail/title/price/category/time).
+- **Footer** (`Footer.jsx` + `.css`, rendered in `App.jsx`) — brand blurb, link columns (Marketplace / Company / Account incl. **About** + **Contact**), real trust-signal strip, and a safety disclaimer. (Closes the long-standing Footer TODO.)
+
+### Changed
+- **Homepage stats are now dynamic** — hero trust stats show real **Active Listings / Registered Users / Verified Businesses / Categories**; category carousel cards show **real per-category listing counts**. Replaced the hardcoded `482+`, `8`, and `1,250 active listings`-style numbers (Part 3 + Part 5: real trust signals, no fabricated numbers). Added a Food carousel card (9 categories).
+
+### Backend
+- `ContactMessage` model + migration; `contact.controller.js` + `contactSchema`; `getPublicStats` in `stats.controller.js`; both wired in `routes/index.js`.
+
+### Verified (API + `npm run build`)
+- `POST /contact` → 201 + persisted; invalid payload → 422; `GET /stats/public` returns live counts (activeListings/users/verifiedBusinesses/categories + per-category). Frontend build passes (0 errors). Navbar already linked `/about` + `/contact` (routes now exist).
+
+---
+
 ## 2026-06-17 — Phase 5.6: Edit Listing + Owner Controls
 
 Added a dedicated Edit Listing experience and gated owner actions on the listing detail page. **No UI redesign** — the edit form reuses the Add Listing cards/inputs (`AddListingPage.css`) and the `CategoryFields` component; owner controls reuse the existing detail-page button styles.

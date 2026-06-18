@@ -130,6 +130,8 @@ Order matters — AuthProvider must be outermost so ListingsProvider and AddList
   - `/saved-listings` → `SavedListingsPage` (**protected**)
   - `/profile` → `ProfilePage` (**protected**)
   - `/seller/:sellerName` → `SellerProfilePage`
+  - `/about` → `AboutPage` (public; marketplace info + real stats strip)
+  - `/contact` → `ContactPage` (public; inquiry types + form → `POST /contact`)
   - `/admin` → `AdminPage` (**admin-only** via `RequireAdmin` — needs auth + `user.role === 'admin'`; non-admins redirected to `/`)
   - `*` → `NotFoundPage`
 
@@ -243,6 +245,8 @@ Single source of truth for monetisation / verification / admin-approval constant
 - **`listingsApi.js`** (Phase 5.2.2, +5.2.5, +5.6) — `list(filters)` / `get(id)` / `create(payload)` / `mine()` / `update(id, changes)` / `remove(id)`. `update` (PATCH) now also carries `details`, the full `images` set (add/remove/reorder), and `status` (incl. resubmit). Consumed by `ListingsContext`, `MyListingsPage`, `EditListingPage`, and `ListingDetailPage` owner controls
 - **`savedApi.js`** (Phase 5.2.5) — `list()` / `add(listingId)` / `remove(listingId)` (all auth). Consumed by `FavoritesContext`
 - **`adminApi.js`** (Phase 5.2.4, +5.5) — moderation + dashboard: `getStats()`, `listUsers(search?)`, `listListings(status)`, `listFeaturedRequests()`, `setListingStatus(id, body)`, `deleteListing(id)`, `listBusinessAccounts(approved?)`, `decideBusiness(id, body)`. Consumed by `AdminPage`. Enforced server-side via JWT + `requireRole('admin')`.
+- **`statsApi.js`** (Phase 5.7) — `getPublicStats()` → `GET /stats/public` (no auth). Consumed via `hooks/usePublicStats.js` by HomePage, AboutPage, and Footer.
+- **`contactApi.js`** (Phase 5.7) — `send(payload)` → `POST /contact` (public; persisted to `ContactMessage`). Consumed by `ContactPage`.
 - **`listingAdapter.js`** (Phase 5.2.2) — `adaptListing` / `adaptListings`: backend listing → legacy UI shape (see ListingsContext)
 - **`emailService.js`** — legacy mock email sender (no longer used by LoginPage after Phase 5.2.1; superseded by the backend)
 - **`recentlyViewedService.js`** (Phase 4.3) — `getRecentlyViewed()` / `addRecentlyViewed(listing)` / `clearRecentlyViewed()`; localStorage `malir-recently-viewed`; dedupe + move-to-front; cap 20
@@ -349,6 +353,12 @@ Single source of truth for monetisation / verification / admin-approval constant
 ### FeaturedListings (`FeaturedListings.jsx`)
 - **Backend-driven** (Phase 5.2.2): reads `allListings` (approved) from `useListings()`; orders **featured ads first, then standard** (newest within each group), capped at 8. Shows `<LoadingState>` while fetching and an empty state with a "+ Post a Listing" CTA when there are none.
 
+### RecentlyAdded (`RecentlyAdded.jsx`) — Phase 5.7
+- Latest approved listings (newest first by `createdAt`, max 8) from `useListings()`. **Reuses `FeaturedListings.css`** classes + `ListingCard` so it matches the homepage exactly. Returns `null` when there are no approved listings.
+
+### Footer (`Footer.jsx` + `.css`) — Phase 5.7
+- Site-wide footer rendered in `App.jsx` (after `<Routes>`, outside `AnimatePresence`). Dark green (`#0d2a1a`); brand blurb + link columns (Marketplace / Company [**About**, **Contact**] / Account), a **real** trust-signal strip (`usePublicStats`: active listings · verified businesses · categories · "Local community marketplace"), and a safety disclaimer. No fabricated numbers.
+
 ### LoadingState (`LoadingState.jsx` + `.css`)
 - Reusable centered spinner + label (Phase 5.2.2). Used by FeaturedListings, CategoryPage, AllListingsPage, ListingDetailPage, SellerProfilePage while backend data is in flight. Respects `prefers-reduced-motion`.
 
@@ -371,7 +381,14 @@ Single source of truth for monetisation / verification / admin-approval constant
 
 ### HomePage (`HomePage.jsx`)
 - Wraps in `<PageTransition>`, uses `useNavigate` for hero search → `/listings?q=…`
-- Contains `<PulseFitHero>` + `<FeaturedListings>` + `<RecentlyViewed>`
+- Contains `<PulseFitHero>` + `<FeaturedListings>` + `<RecentlyAdded>` + `<RecentlyViewed>`
+- **Dynamic stats** (Phase 5.7): `usePublicStats()` (→ `GET /stats/public`) feeds the hero trust stats (Active Listings / Registered Users / Verified Businesses / Categories) and the category carousel counts (real per-category approved counts). No hardcoded numbers; values show `—` until loaded. `CATEGORY_CARDS` is the static image/title/href config (9 categories incl. food)
+
+### AboutPage (`AboutPage.jsx` + `.css`) — Phase 5.7
+- Public. Dark-green hero (`#0d2a1a`) + real-stats strip (`usePublicStats`) + intro + feature grid (safe trade / resident-focused / business opportunities / verified business / home businesses / featured) + future-vision block with CTAs
+
+### ContactPage (`ContactPage.jsx` + `.css`) — Phase 5.7
+- Public. Inquiry types (general/business/featured/bug/scam/suggestion), email + WhatsApp placeholders, response expectations, and a form (Name/Email/Subject/Message + reason). Submits via `contactApi.send` → `POST /contact` (validated + persisted to `ContactMessage`; field errors mapped back to inputs); success state with "send another"
 
 ### CategoryPage (`CategoryPage.jsx` + `CategoryPage.css`)
 - Dark green hero band with category name + listing count pill

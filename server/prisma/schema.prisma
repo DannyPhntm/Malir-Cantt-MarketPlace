@@ -135,3 +135,20 @@ model PasswordResetCode {
   @@index([email])
   @@map("password_reset_codes")
 }
+
+// ── Contact form submissions ─────────────────────────────────────────────────
+// Stored from the public Contact page. `category` is the inquiry type
+// (general | business | featured | bug | scam | suggestion). No email
+// integration yet — submissions are persisted (and logged in dev).
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  subject   String
+  message   String
+  category  String   @default("general")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("contact_messages")
+}
