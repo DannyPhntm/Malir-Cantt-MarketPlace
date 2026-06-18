@@ -83,8 +83,8 @@ export default function ContactPage() {
             </nav>
             <h1 className="contact__title">Contact Us</h1>
             <p className="contact__subtitle">
-              Questions, business inquiries, or something to report? Reach the Malir Cantt
-              Marketplace team below.
+              Questions, business inquiries, or something to report? Reach the People of
+              Malir Cantt Bazaar team below.
             </p>
           </div>
         </header>

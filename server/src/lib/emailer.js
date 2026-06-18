@@ -1,4 +1,4 @@
-// Email transport for the Malir Cantt Marketplace.
+// Email transport for People of Malir Cantt Bazaar.
 //
 // Uses Nodemailer over SMTP, configured entirely from environment variables so
 // the same code works with any provider (Gmail, Mailtrap, SES, …). When SMTP is
@@ -10,7 +10,7 @@ import nodemailer from 'nodemailer';
 
 const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE } = process.env;
 
-const MAIL_FROM = process.env.MAIL_FROM || 'Malir Cantt Marketplace <no-reply@malircantt.pk>';
+const MAIL_FROM = process.env.MAIL_FROM || 'People of Malir Cantt Bazaar <no-reply@malircantt.pk>';
 
 // Transport is created lazily and reused. Null when SMTP isn't configured.
 let transport = null;
@@ -66,7 +66,7 @@ export async function sendEmail({ to, subject, html, text, code, label }) {
 
 /* ── Templates ───────────────────────────────────────────────────────────────── */
 
-const BRAND = 'Malir Cantt Marketplace';
+const BRAND = 'People of Malir Cantt Bazaar';
 
 function codeLayout({ heading, intro, code, footer }) {
   return `

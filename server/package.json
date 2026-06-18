@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Backend API + database foundation for the Malir Cantt Marketplace (Phase 5.1)",
+  "description": "Backend API + database foundation for People of Malir Cantt Bazaar (Phase 5.1)",
   "main": "src/server.js",
   "scripts": {
     "postinstall": "node scripts/postinstall.js",

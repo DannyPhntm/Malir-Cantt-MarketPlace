@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-06-18 — Phase 5.8: Rebrand to "People of Malir Cantt Bazaar"
+
+Branding-only update — **no UI redesign, no layout/functionality changes**. Renamed the product from "Malir Cantt Marketplace" to **People of Malir Cantt Bazaar** (tagline **Buy • Sell • Hire • Discover**; secondary description "The community marketplace for Malir Cantt residents."). All design tokens, colours, animations, components, and responsiveness preserved. "Malir Cantt" as a *location* is unchanged everywhere (listings, placeholders, seed data); only the *brand name* changed.
+
+### Changed
+- **Logo / wordmark** — Navbar wordmark now "People of Malir Cantt" / "BAZAAR" (existing two-line styling preserved); brand `aria-label` updated. Login card header → "PEOPLE OF MALIR CANTT BAZAAR"; "Back to Marketplace" → "Back to Bazaar".
+- **Homepage hero** — subtitle rewritten to emphasise community, local businesses, buying, selling, jobs, services, and home food. Title/layout unchanged.
+- **About page** — title, intro, and vision copy repositioned as "a community-driven local bazaar for Malir Cantt residents".
+- **Footer** — wordmark, blurb, and copyright rebranded.
+- **Contact page** — "Malir Cantt Marketplace team" → "People of Malir Cantt Bazaar team".
+- **Listing detail** — pre-filled WhatsApp message references the new brand. **Seller profile** sub-line rebranded.
+- **Email templates** — `BRAND` constant + `MAIL_FROM` display name rebranded (drives all verification / reset / email-change templates). Domain unchanged.
+- **Meta / sharing** — `index.html` `<title>`, new `meta description`, and Open Graph / Twitter card tags added with the new brand + tagline.
+- **Docs** — README, PROJECT.md, CLAUDE.md purpose + wordmark note rebranded. Server `package.json` description + startup log rebranded.
+
+### Added
+- **Affiliation disclaimer** (subtle) in the Footer and About page: "Independent community marketplace for Malir Cantt residents. Not officially affiliated with any third-party community or social media group."
+
+---
+
 ## 2026-06-18 — Phase 5.7: Trust & Information System
 
 Added About + Contact pages, a site Footer, and replaced hardcoded homepage numbers with **live backend data**. **No UI redesign** — new pages reuse the existing hero/card/form patterns and design tokens; Recently Added reuses the Featured Listings layout.

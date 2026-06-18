@@ -106,6 +106,15 @@
   color: var(--color-secondary);
 }
 
+.about__disclaimer {
+  margin-top: var(--space-5);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: var(--lh-relaxed);
+  color: var(--color-secondary);
+  opacity: 0.7;
+}
+
 /* Feature grid */
 .about__grid {
   display: grid;

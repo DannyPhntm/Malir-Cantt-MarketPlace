@@ -47,10 +47,10 @@ export default function AboutPage() {
               <span className="breadcrumb__sep" aria-hidden="true">/</span>
               <span className="breadcrumb__current">About</span>
             </nav>
-            <h1 className="about__title">About Malir Cantt Marketplace</h1>
+            <h1 className="about__title">About People of Malir Cantt Bazaar</h1>
             <p className="about__subtitle">
-              The trusted, community-only marketplace for Malir Cantt — buy, sell, and
-              connect with verified neighbours and local businesses.
+              A community-driven local bazaar for Malir Cantt residents — buy, sell, hire, and
+              discover with verified neighbours and local businesses.
             </p>
           </div>
         </header>
@@ -79,12 +79,12 @@ export default function AboutPage() {
 
           {/* Intro */}
           <section className="about__section">
-            <h2 className="about__section-title">What is Malir Cantt Marketplace?</h2>
+            <h2 className="about__section-title">What is People of Malir Cantt Bazaar?</h2>
             <p className="about__lead">
-              Malir Cantt Marketplace is a local classifieds platform built exclusively for the
+              People of Malir Cantt Bazaar is a community-driven local bazaar built exclusively for the
               Malir Cantonment community. Instead of dealing with strangers across the city, you
-              buy and sell with verified neighbours — making every transaction simpler, faster,
-              and safer. From vehicles and property to electronics, furniture, jobs, services,
+              buy, sell, hire, and discover with verified neighbours — making every transaction simpler,
+              faster, and safer. From vehicles and property to electronics, furniture, jobs, services,
               and home kitchens, it's one trusted place for everything happening inside Malir Cantt.
             </p>
           </section>
@@ -106,15 +106,19 @@ export default function AboutPage() {
           <section className="about__section about__vision">
             <h2 className="about__section-title">Where we're headed</h2>
             <p className="about__lead">
-              We're building Malir Cantt Marketplace into the everyday home for local commerce —
+              We're building People of Malir Cantt Bazaar into the everyday home for local commerce —
               with in-app messaging, richer business profiles, smarter discovery, and tools that
               help local entrepreneurs grow. Every step keeps the same promise: a trustworthy,
-              resident-first marketplace with no fake numbers and no anonymous strangers.
+              resident-first bazaar with no fake numbers and no anonymous strangers.
             </p>
             <div className="about__cta">
               <Link to="/add-listing" className="about__cta-primary">Post a Listing</Link>
               <Link to="/login?register=business" className="about__cta-secondary">Become a Verified Business</Link>
             </div>
+            <p className="about__disclaimer">
+              Independent community marketplace for Malir Cantt residents. Not officially affiliated with
+              any third-party community or social media group.
+            </p>
           </section>
 
         </div>

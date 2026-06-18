@@ -1,6 +1,6 @@
-# Malir Cantt Marketplace
+# People of Malir Cantt Bazaar
 
-A community-based marketplace exclusively for Malir Cantt residents.
+The community marketplace for Malir Cantt residents. Buy • Sell • Hire • Discover.
 
 ## Status
 

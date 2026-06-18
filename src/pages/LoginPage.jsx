@@ -1076,7 +1076,7 @@ export default function LoginPage() {
                 <line x1="16" y1="8.1" x2="16.7" y2="6.5"/>
               </svg>
             </div>
-            <p className="login-card__header-title">MALIR CANTT MARKETPLACE</p>
+            <p className="login-card__header-title">PEOPLE OF MALIR CANTT BAZAAR</p>
             <p className="login-card__header-sub">For Malir Cantt residents only</p>
           </div>
 
@@ -1122,7 +1122,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <div className="login-card__footer">
-            <Link to="/" className="login-card__back">← Back to Marketplace</Link>
+            <Link to="/" className="login-card__back">← Back to Bazaar</Link>
           </div>
 
         </div>

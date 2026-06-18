@@ -168,7 +168,7 @@ export default function SellerProfilePage() {
             <h1 className="sp-hero__title">{name}</h1>
             <p className="sp-hero__sub">
               {isVerified ? (isBusiness ? 'Verified Business' : 'Verified Resident') : accountLabel}
-              {' · '}Malir Cantt Marketplace
+              {' · '}People of Malir Cantt Bazaar
             </p>
           </div>
         </div>

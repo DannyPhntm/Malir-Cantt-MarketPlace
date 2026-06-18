@@ -24,9 +24,9 @@ export default function Footer() {
         <div className="footer__top">
           {/* Brand + blurb */}
           <div className="footer__brand">
-            <span className="footer__wordmark">MALIR CANTT <span className="footer__wordmark-accent">MARKETPLACE</span></span>
+            <span className="footer__wordmark">People of Malir Cantt <span className="footer__wordmark-accent">BAZAAR</span></span>
             <p className="footer__blurb">
-              The trusted, community-only marketplace for Malir Cantt residents. Buy, sell, and
+              The community marketplace for Malir Cantt residents. Buy, sell, hire, and discover —
               connect with verified neighbours and local businesses.
             </p>
           </div>
@@ -65,9 +65,13 @@ export default function Footer() {
         </div>
 
         <div className="footer__bottom">
-          <p className="footer__copy">© {year} Malir Cantt Marketplace. Made for the Malir Cantt community.</p>
+          <p className="footer__copy">© {year} People of Malir Cantt Bazaar. Made for the Malir Cantt community.</p>
           <p className="footer__safety">
             Always meet in a public place and inspect items before paying. Never share OTPs or pay in advance.
+          </p>
+          <p className="footer__disclaimer">
+            Independent community marketplace for Malir Cantt residents. Not officially affiliated with
+            any third-party community or social media group.
           </p>
         </div>
 

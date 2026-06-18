@@ -181,7 +181,7 @@ export default function ListingDetailPage() {
   const isBusiness = seller.badgeType === 'business';
   const accountType = isBusiness ? 'Business' : 'Personal';
   const sellerArea = seller.area || listing.location;
-  const whatsAppMessage = `Hi,\n\nI saw your listing for ${listing.title} on Malir Cantt Marketplace.\n\nIs this still available?`;
+  const whatsAppMessage = `Hi,\n\nI saw your listing for ${listing.title} on People of Malir Cantt Bazaar.\n\nIs this still available?`;
   const whatsAppUrl = `https://wa.me/${toWhatsAppNumber(seller.phone)}?text=${encodeURIComponent(whatsAppMessage)}`;
 
   // Owner-only controls. Admin moderation lives in the Admin Dashboard, so an

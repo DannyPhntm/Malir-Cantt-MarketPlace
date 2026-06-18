@@ -2,7 +2,7 @@
 
 ## Purpose
 
-You are assisting with the development of the Malir Cantt Marketplace.
+You are assisting with the development of People of Malir Cantt Bazaar (the community marketplace for Malir Cantt residents; tagline "Buy • Sell • Hire • Discover").
 
 Before making major changes, consider the project's vision and design philosophy documented in PROJECT.md.
 
@@ -141,7 +141,7 @@ Order matters — AuthProvider must be outermost so ListingsProvider and AddList
 
 ### Navbar (`Navbar.jsx` + `Navbar.css`)
 - **Dark green background**: `#0d2a1a`, 72px height
-- **Left**: checkpost boom-gate SVG icon + wordmark ("MALIR CANTT" bold Manrope / "MARKETPLACE" green Inter)
+- **Left**: checkpost boom-gate SVG icon + wordmark ("People of Malir Cantt" bold Manrope / "BAZAAR" green Inter)
 - **Center**: Browse, Categories (dropdown), Listings, About, Contact — opacity 0.85
 - **Right** (left → right order): heart/favourites icon button → "Join / Login" ghost button → "+ Add Listing" green CTA
 - **Favourites icon**: `navbar__fav-btn` — 36×36px ghost button, heart SVG fills red when favourites exist; red count badge (`navbar__fav-badge`) top-right corner; clicking opens FavoritesDrawer

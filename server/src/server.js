@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 4000;
 const app = createApp();
 
 const server = app.listen(PORT, () => {
-  console.log(`Malir Marketplace API listening on http://localhost:${PORT}/api`);
+  console.log(`People of Malir Cantt Bazaar API listening on http://localhost:${PORT}/api`);
 });
 
 // Graceful shutdown — close the HTTP server and Prisma connection.

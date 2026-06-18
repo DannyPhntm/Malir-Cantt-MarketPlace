@@ -101,7 +101,7 @@ export default function Navbar() {
     <header className="navbar">
       <div className="navbar__inner">
         {/* Brand — checkpost icon + wordmark */}
-        <Link to="/" className="navbar__brand" aria-label="Malir Cantt Marketplace Home">
+        <Link to="/" className="navbar__brand" aria-label="People of Malir Cantt Bazaar Home">
           <div className="navbar__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <line x1="5" y1="21" x2="5" y2="5" />
@@ -114,8 +114,8 @@ export default function Navbar() {
             </svg>
           </div>
           <div className="navbar__wordmark">
-            <span className="navbar__wordmark-primary">MALIR CANTT</span>
-            <span className="navbar__wordmark-secondary">MARKETPLACE</span>
+            <span className="navbar__wordmark-primary">People of Malir Cantt</span>
+            <span className="navbar__wordmark-secondary">BAZAAR</span>
           </div>
         </Link>
 
