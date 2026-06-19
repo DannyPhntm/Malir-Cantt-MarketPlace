@@ -1,8 +1,11 @@
 // A small typed error so controllers can throw clean HTTP errors.
 export class ApiError extends Error {
-  constructor(status, message) {
+  constructor(status, message, details = null) {
     super(message);
     this.status = status;
+    // Optional machine-readable payload merged into the JSON response (e.g.
+    // `{ unverified: true }`) so the client can branch without parsing prose.
+    this.details = details;
   }
 }
 
@@ -19,7 +22,7 @@ export function notFound(req, res) {
 // JSON; anything else becomes a 500 (details logged server-side only).
 export function errorHandler(err, req, res, _next) {
   if (err instanceof ApiError) {
-    return res.status(err.status).json({ error: err.message });
+    return res.status(err.status).json({ error: err.message, ...(err.details || {}) });
   }
   // Prisma known request errors.
   if (err.code === 'P2002') {

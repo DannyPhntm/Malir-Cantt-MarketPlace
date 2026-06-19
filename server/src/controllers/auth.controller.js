@@ -25,33 +25,60 @@ export const register = asyncHandler(async (req, res) => {
     req.body;
 
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) throw new ApiError(409, 'An account with that email already exists.');
+  if (existing) {
+    // A verified account is a hard conflict; an unverified one is recoverable —
+    // tell the client so it can offer to resend verification instead of leaving
+    // the user stuck behind a generic "already exists" error.
+    if (existing.emailVerified) {
+      throw new ApiError(409, 'An account with that email already exists.');
+    }
+    throw new ApiError(
+      409,
+      'Account exists but is not verified. Resend verification email?',
+      { unverified: true, email },
+    );
+  }
 
   const passwordHash = await bcrypt.hash(password, 10);
-
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      passwordHash,
-      phone,
-      accountType,
-      residentLocation,
-      canttPassNumber: canttPassNumber || null,
-      // Business accounts start unverified + pending approval.
-      businessAccount:
-        accountType === 'business'
-          ? { create: { businessName: businessName || name, approved: false } }
-          : undefined,
-    },
-    include: { businessAccount: true },
-  });
-
   const code = generateCode();
-  await prisma.emailVerificationCode.create({
-    data: { email, code, expiresAt: codeExpiry() },
+
+  // Create the user (+ its verification code) atomically. Email delivery is a
+  // network call, so it runs OUTSIDE the DB transaction; if it fails we roll the
+  // account back so a half-created, un-emailable user is never left behind.
+  const user = await prisma.$transaction(async (tx) => {
+    const created = await tx.user.create({
+      data: {
+        name,
+        email,
+        passwordHash,
+        phone,
+        accountType,
+        residentLocation,
+        canttPassNumber: canttPassNumber || null,
+        // Business accounts start unverified + pending approval.
+        businessAccount:
+          accountType === 'business'
+            ? { create: { businessName: businessName || name, approved: false } }
+            : undefined,
+      },
+      include: { businessAccount: true },
+    });
+    await tx.emailVerificationCode.create({
+      data: { email, code, expiresAt: codeExpiry() },
+    });
+    return created;
   });
-  await sendVerificationEmail({ to: email, code, name });
+
+  try {
+    await sendVerificationEmail({ to: email, code, name });
+  } catch {
+    // Roll back the just-created account so signup can be retried cleanly.
+    // Deleting the user cascades its business account; the code has no FK link
+    // to the user, so remove it explicitly.
+    await prisma.emailVerificationCode.deleteMany({ where: { email } });
+    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+    throw new ApiError(502, 'We could not send the verification email. Please try again in a moment.');
+  }
 
   res.status(201).json({ user: publicUser(user) });
 });

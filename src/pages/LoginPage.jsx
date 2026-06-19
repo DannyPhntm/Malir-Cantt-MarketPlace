@@ -160,7 +160,7 @@ function PasswordField({ id, label, name, value, onChange, placeholder = 'Min. 8
 
 /* ── Email verification screen ───────────────────────────────────────────────── */
 
-function EmailVerificationScreen({ email, onVerify, onSuccess, onResend, onBack }) {
+function EmailVerificationScreen({ email, notice, onVerify, onSuccess, onResend, onBack }) {
   const [input, setInput]               = useState('');
   const [error, setError]               = useState('');
   const [attempts, setAttempts]         = useState(0);
@@ -235,6 +235,7 @@ function EmailVerificationScreen({ email, onVerify, onSuccess, onResend, onBack 
       </div>
 
       <p className="verify-heading">Check your email</p>
+      {notice && <p className="verify-notice" role="status">{notice}</p>}
       <p className="verify-subtext">
         We sent a 6-digit code to{' '}
         <span className="verify-email">{email}</span>
@@ -539,6 +540,7 @@ function PersonalForm({ onBack, onAuthenticated }) {
   });
   const [errors, setErrors]         = useState({});
   const [sending, setSending]       = useState(false);
+  const [verifyNotice, setVerifyNotice] = useState('');
   const handleChange = e => {
     const { name, value } = e.target;
     setForm(p => ({ ...p, [name]: value }));
@@ -570,9 +572,17 @@ function PersonalForm({ onBack, onAuthenticated }) {
         residentLocation: form.area,
         canttPassNumber: form.canttPass || null,
       });      setSending(false);
+      setVerifyNotice('');
       setStage('verify');
     } catch (err) {
       setSending(false);
+      // Existing-but-unverified account: send the user to the verify screen so
+      // they can resend the code rather than hitting a dead-end "already exists".
+      if (err?.unverified) {
+        setVerifyNotice('Account exists but is not verified. Resend verification email?');
+        setStage('verify');
+        return;
+      }
       const { fieldErrors, general } = mapApiError(err, {
         name: 'fullName', residentLocation: 'area', canttPassNumber: 'canttPass',
       });
@@ -695,6 +705,7 @@ function PersonalForm({ onBack, onAuthenticated }) {
         <motion.div key="verify" variants={STEP_VARIANTS} initial="initial" animate="enter" exit="exit">
           <EmailVerificationScreen
             email={form.email}            onVerify={(code) => verifyEmail(form.email, code)}
+            notice={verifyNotice}
             onSuccess={onAuthenticated}
             onResend={handleResend}
             onBack={() => setStage('form')}
@@ -716,6 +727,7 @@ function BusinessForm({ onBack }) {
   });
   const [errors, setErrors]           = useState({});
   const [sending, setSending]         = useState(false);
+  const [verifyNotice, setVerifyNotice] = useState('');
   const handleChange = e => {
     const { name, value } = e.target;
     setForm(p => ({ ...p, [name]: value }));
@@ -749,9 +761,16 @@ function BusinessForm({ onBack }) {
         residentLocation: form.area,
         businessName: form.businessName,
       });      setSending(false);
+      setVerifyNotice('');
       setStage('verify');
     } catch (err) {
       setSending(false);
+      // Existing-but-unverified account: route to the verify screen to resend.
+      if (err?.unverified) {
+        setVerifyNotice('Account exists but is not verified. Resend verification email?');
+        setStage('verify');
+        return;
+      }
       const { fieldErrors, general } = mapApiError(err, {
         name: 'ownerName', residentLocation: 'area',
       });
@@ -913,6 +932,7 @@ function BusinessForm({ onBack }) {
         <motion.div key="verify" variants={STEP_VARIANTS} initial="initial" animate="enter" exit="exit">
           <EmailVerificationScreen
             email={form.email}            onVerify={(code) => verifyEmail(form.email, code)}
+            notice={verifyNotice}
             // Account + business application are created server-side at register;
             // verifying the email signs the user in (status stays Pending Approval).
             onSuccess={() => setStage('done')}

@@ -570,6 +570,19 @@
   margin-bottom: var(--space-4);
 }
 
+.verify-notice {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+  color: var(--color-primary);
+  background: rgba(26, 107, 69, 0.09);
+  border: 1px solid rgba(26, 107, 69, 0.22);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
 .verify-email {
   font-weight: var(--fw-semibold);
   color: var(--color-ink);

@@ -24,11 +24,14 @@ export function getAuthToken() {
  * inline errors without redesign.
  */
 export class ApiError extends Error {
-  constructor(message, { status, fields } = {}) {
+  constructor(message, { status, fields, unverified } = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.fields = fields || null;
+    // True when the server reports an existing-but-unverified account, so the
+    // UI can route the user to the resend-verification flow.
+    this.unverified = unverified || false;
   }
 }
 
@@ -62,7 +65,11 @@ async function request(path, { method = 'GET', body, signal } = {}) {
 
   if (!res.ok) {
     const message = data?.error || `Request failed (${res.status}).`;
-    throw new ApiError(message, { status: res.status, fields: data?.fields });
+    throw new ApiError(message, {
+      status: res.status,
+      fields: data?.fields,
+      unverified: data?.unverified,
+    });
   }
 
   return data;
