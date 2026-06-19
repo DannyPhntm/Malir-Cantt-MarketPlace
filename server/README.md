@@ -107,9 +107,13 @@ conflicts → `409`; missing records → `404`.
   `requireAuth` / `requireRole` middleware (`src/middleware/auth.js`). `JWT_SECRET`
   + `JWT_EXPIRES_IN` in `.env` — set a strong secret in production. (No refresh
   tokens / rotation yet.)
-- **Email/SMS**: verification + reset codes are generated and stored; the code is
-  returned in the response for dev parity with the mock UI. Swap in a real email
-  provider in `auth.controller.js` and stop returning the code.
+- **Email**: verification, password-reset, and email-change codes are generated
+  and stored, then delivered via **Resend** (`src/lib/emailer.js`). Set
+  `RESEND_API_KEY` + `MAIL_FROM` in `.env` to send real email. With no API key
+  (local dev / CI) it falls back to a **server-side console log** of the code so
+  flows still work — the code is never returned in any API response. Delivery
+  failures surface a friendly `502` (registration also rolls the new account
+  back; see `register` in `auth.controller.js`).
 - **Image storage**: `listing_images.image_url` holds a URL. Point it at S3 /
   Supabase Storage / Cloudinary; the upload endpoint slots in front of
   `createListing`.

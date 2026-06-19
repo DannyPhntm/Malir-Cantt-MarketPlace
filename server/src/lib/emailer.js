@@ -1,67 +1,67 @@
 // Email transport for People of Malir Cantt Bazaar.
 //
-// Uses Nodemailer over SMTP, configured entirely from environment variables so
-// the same code works with any provider (Gmail, Mailtrap, SES, …). When SMTP is
-// not configured (local dev / CI), it falls back to a SERVER-SIDE console log so
-// flows keep working without real credentials — codes are never sent to the
-// client.
+// Uses the Resend HTTP API, configured entirely from environment variables.
+// When RESEND_API_KEY is not configured (local dev / CI), it falls back to a
+// SERVER-SIDE console log so flows keep working without real credentials —
+// codes are never sent to the client.
 
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+import { ApiError } from '../middleware/errorHandler.js';
 
-const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE } = process.env;
+const { RESEND_API_KEY } = process.env;
 
-const MAIL_FROM = process.env.MAIL_FROM || 'People of Malir Cantt Bazaar <no-reply@malircantt.pk>';
+const MAIL_FROM = process.env.MAIL_FROM || 'People of Malir Cantt Bazaar <onboarding@resend.dev>';
 
-// Transport is created lazily and reused. Null when SMTP isn't configured.
-let transport = null;
-const isConfigured = Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS);
+// Client is created lazily and reused. Null when no API key is configured.
+let client = null;
+const isConfigured = Boolean(RESEND_API_KEY);
 
-function getTransport() {
+function getClient() {
   if (!isConfigured) return null;
-  if (!transport) {
-    transport = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: Number(SMTP_PORT) || 587,
-      // `secure: true` for port 465; STARTTLS otherwise.
-      secure: SMTP_SECURE ? SMTP_SECURE === 'true' : Number(SMTP_PORT) === 465,
-      auth: { user: SMTP_USER, pass: SMTP_PASS },
-    });
-  }
-  return transport;
+  if (!client) client = new Resend(RESEND_API_KEY);
+  return client;
 }
 
 /**
  * Send an email.
  *
- * - SMTP configured  → send a real email; the code travels ONLY inside the email
- *   (never logged, never returned to the client).
- * - SMTP unconfigured → do NOT crash; log a clear development message that
- *   includes the code so it can be used to complete the flow locally. This log
- *   is server-side only.
+ * - RESEND_API_KEY configured  → send a real email via Resend; the code travels
+ *   ONLY inside the email (never logged, never returned to the client).
+ * - RESEND_API_KEY unconfigured → do NOT crash; log a clear development message
+ *   that includes the code so it can be used to complete the flow locally. This
+ *   log is server-side only.
  *
  * `code` / `label` are optional and used only to make the dev log readable.
+ * Throws ApiError(502) on delivery failure so callers surface a friendly error.
  */
 export async function sendEmail({ to, subject, html, text, code, label }) {
-  const t = getTransport();
-  if (!t) {
-    // ── Development fallback: SMTP not configured ────────────────────────────
+  const resend = getClient();
+  if (!resend) {
+    // ── Development fallback: RESEND_API_KEY not configured ───────────────────
     // The code is intentionally printed here (server console only) so local dev
     // and CI can complete verification without a mail provider. It is never sent
-    // to the client and never logged once SMTP is configured.
+    // to the client and never logged once Resend is configured.
     console.info(
       '\n──────────────────────────────────────────────────────────────\n' +
-        '  [emailer] DEV MODE — SMTP not configured, email NOT sent.\n' +
+        '  [emailer] DEV MODE — RESEND_API_KEY not set, email NOT sent.\n' +
         `  To:    ${to}\n` +
         `  Type:  ${label || subject}\n` +
         (code ? `  CODE:  ${code}   ← use this to continue\n` : '') +
-        '  Configure SMTP_* in server/.env to send real email.\n' +
+        '  Set RESEND_API_KEY + MAIL_FROM in server/.env to send real email.\n' +
         '──────────────────────────────────────────────────────────────\n',
     );
-    return { delivered: false, reason: 'smtp-not-configured' };
+    return { delivered: false, reason: 'resend-not-configured' };
   }
-  // SMTP configured → real send. The code lives only in the email body.
-  await t.sendMail({ from: MAIL_FROM, to, subject, html, text });
-  return { delivered: true };
+  // Resend configured → real send. The code lives only in the email body.
+  try {
+    const { data, error } = await resend.emails.send({ from: MAIL_FROM, to, subject, html, text });
+    // Resend returns errors in the `error` field rather than throwing.
+    if (error) throw new Error(error.message || 'Resend reported a delivery error.');
+    return { delivered: true, id: data?.id };
+  } catch (err) {
+    console.error('[emailer] Resend delivery failed:', err?.message || err);
+    throw new ApiError(502, 'We could not send the email. Please try again in a moment.');
+  }
 }
 
 /* ── Templates ───────────────────────────────────────────────────────────────── */
