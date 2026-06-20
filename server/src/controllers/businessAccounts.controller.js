@@ -1,16 +1,17 @@
 import prisma from '../lib/prisma.js';
 import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
+import { SELLER_STATUSES } from '../lib/constants.js';
 
-/* POST /api/business-accounts — apply (or re-apply) for a business account.
-   Stays unapproved until an admin decision (never auto-approved). */
+/* POST /api/business-accounts — create (or rename) a business account.
+   Seller status starts 'not_applied'; the user applies separately via /apply. */
 export const applyForBusiness = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { businessName } = req.body;
 
   const account = await prisma.businessAccount.upsert({
     where: { userId },
-    update: { businessName, approved: false },
-    create: { userId, businessName, approved: false },
+    update: { businessName },
+    create: { userId, businessName },
   });
 
   // Reflect the chosen account type on the user.
@@ -19,11 +20,24 @@ export const applyForBusiness = asyncHandler(async (req, res) => {
   res.status(201).json({ businessAccount: account });
 });
 
-/* GET /api/business-accounts?approved=true|false — admin queue. */
+/* POST /api/business-accounts/apply — an existing business account applies for
+   Business Seller status (not_applied/rejected → pending). */
+export const applyForSeller = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const account = await prisma.businessAccount.findUnique({ where: { userId } });
+  if (!account) throw new ApiError(400, 'Create a business account before applying for Business Seller.');
+  if (account.sellerStatus === 'approved') throw new ApiError(400, 'You are already an approved Business Seller.');
+  const updated = await prisma.businessAccount.update({
+    where: { userId },
+    data: { sellerStatus: 'pending' },
+  });
+  res.json({ businessAccount: updated });
+});
+
+/* GET /api/business-accounts?status=pending|approved|… — admin queue. */
 export const listBusinessAccounts = asyncHandler(async (req, res) => {
   const where = {};
-  if (req.query.approved === 'true') where.approved = true;
-  if (req.query.approved === 'false') where.approved = false;
+  if (SELLER_STATUSES.includes(req.query.status)) where.sellerStatus = req.query.status;
 
   const businessAccounts = await prisma.businessAccount.findMany({
     where,
@@ -45,24 +59,25 @@ export const getBusinessAccount = asyncHandler(async (req, res) => {
   res.json({ businessAccount: account });
 });
 
-/* PATCH /api/business-accounts/:id/decision — admin approve/reject + payment.
-   Approval requires payment to be settled (paid OR not_required) to mark the
-   user businessVerified — mirrors isPremiumActive in the frontend. */
+/* PATCH /api/business-accounts/:id/decision — admin sets seller status and/or
+   payment. The user is businessVerified only when approved AND payment settled
+   (paid or waived). No payment gateway — admin waives or marks paid for beta. */
 export const decideBusinessAccount = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
-  const { approved, paymentStatus } = req.body;
+  const { sellerStatus, paymentStatus } = req.body;
 
   const existing = await prisma.businessAccount.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, 'Business account not found.');
 
+  const nextSeller = sellerStatus ?? existing.sellerStatus;
   const nextPayment = paymentStatus ?? existing.paymentStatus;
-  const settled = nextPayment === 'paid' || nextPayment === 'not_required';
-  const verified = approved && settled;
+  const settled = nextPayment === 'paid' || nextPayment === 'waived';
+  const verified = nextSeller === 'approved' && settled;
 
   const [account] = await prisma.$transaction([
     prisma.businessAccount.update({
       where: { id },
-      data: { approved, paymentStatus: nextPayment },
+      data: { sellerStatus: nextSeller, paymentStatus: nextPayment },
     }),
     prisma.user.update({
       where: { id: existing.userId },
