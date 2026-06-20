@@ -2,7 +2,7 @@
 .dash-page {
   min-height: calc(100vh - 72px);
   background: var(--color-surface);
-  padding: var(--space-10) var(--space-5) var(--space-16);
+  padding: var(--space-10) var(--space-6) var(--space-16);
 }
 
 .dash-inner {
@@ -314,7 +314,7 @@
 
 @media (max-width: 400px) {
   .dash-page {
-    padding: var(--space-6) var(--space-4) var(--space-12);
+    padding: var(--space-6) var(--space-5) var(--space-12);
   }
 
   .dash-profile-name {

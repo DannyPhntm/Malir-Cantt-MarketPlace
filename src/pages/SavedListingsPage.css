@@ -7,13 +7,13 @@
 .saved-inner {
   max-width: 1100px;
   margin: 0 auto;
-  padding: var(--space-8) var(--space-5) var(--space-16);
+  padding: var(--space-8) var(--space-6) var(--space-16);
 }
 
 /* ── Dark header ─────────────────────────────────────────────────────────────── */
 .saved-header {
   background: #0d2a1a;
-  padding: var(--space-8) var(--space-5);
+  padding: var(--space-8) var(--space-6);
 }
 
 .saved-header__inner {
@@ -329,8 +329,12 @@
     grid-template-columns: 1fr;
   }
 
+  .saved-header {
+    padding: var(--space-8) var(--space-5);
+  }
+
   .saved-inner {
-    padding: var(--space-6) var(--space-4) var(--space-12);
+    padding: var(--space-6) var(--space-5) var(--space-12);
   }
 
   .saved-header__inner {
