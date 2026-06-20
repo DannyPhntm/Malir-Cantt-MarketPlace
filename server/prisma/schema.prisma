@@ -46,7 +46,9 @@ model Listing {
   userId            Int      @map("user_id")
   title             String
   description       String
-  category          String // vehicles | technology | property | furniture | jobs | services | gym | shoes
+  category          String // vehicles | property | electronics | home-living | fashion | services | food | jobs | fitness | other
+  subcategory       String?  @map("subcategory") // slug within the category, or null
+  postingType       String   @default("personal") @map("posting_type") // personal | business
   price             Int // stored in PKR (whole rupees)
   featuredRequested Boolean  @default(false) @map("featured_requested")
   featuredActive    Boolean  @default(false) @map("featured_active")
@@ -103,8 +105,9 @@ model BusinessAccount {
   id            Int     @id @default(autoincrement())
   userId        Int     @unique @map("user_id")
   businessName  String  @map("business_name")
-  paymentStatus String  @default("not_required") @map("payment_status")
-  approved      Boolean @default(false)
+  businessType  String? @map("business_type")
+  sellerStatus  String  @default("not_applied") @map("seller_status")
+  paymentStatus String  @default("payment_required") @map("payment_status")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
