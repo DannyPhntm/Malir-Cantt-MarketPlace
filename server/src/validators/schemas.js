@@ -6,6 +6,11 @@ import {
   IMAGE_OPTIONAL_CATEGORIES,
   MIN_IMAGES,
   MAX_IMAGES,
+  BUSINESS_TYPES,
+  POSTING_TYPES,
+  SELLER_STATUSES,
+  PAYMENT_STATUSES,
+  isValidSubcategory,
 } from '../lib/constants.js';
 
 /* ── Reusable primitives ─────────────────────────────────────────────────────── */
@@ -28,6 +33,7 @@ export const registerSchema = z.object({
   canttPassNumber: z.string().trim().optional().nullable(),
   // Only used when accountType === 'business'
   businessName: z.string().trim().min(2).optional(),
+  businessType: z.enum(BUSINESS_TYPES).optional(),
 });
 
 export const loginSchema = z.object({
@@ -99,13 +105,15 @@ export const listingCreateSchema = z
     title: z.string().trim().min(3, 'Title is required.'),
     description: z.string().trim().min(10, 'Description must be at least 10 characters.'),
     category: z.enum(CATEGORIES),
+    subcategory: z.string().trim().optional().nullable(),
+    postingType: z.enum(POSTING_TYPES).optional().default('personal'),
     price: z.number().int().nonnegative('Price must be a positive number.'),
     featuredRequested: z.boolean().optional().default(false),
     // Category-specific attributes — a flat map of string values.
     details: z.record(z.string()).optional().default({}),
     images: z.array(listingImageInput).max(MAX_IMAGES, `A listing can have at most ${MAX_IMAGES} images.`).default([]),
   })
-  // Image-count rule: >= 1 for every category except jobs/services.
+  // Image-count rule: >= 1 for every category except jobs/services/other.
   .superRefine((data, ctx) => {
     const optional = IMAGE_OPTIONAL_CATEGORIES.includes(data.category);
     if (!optional && data.images.length < MIN_IMAGES) {
@@ -113,6 +121,13 @@ export const listingCreateSchema = z
         code: z.ZodIssueCode.custom,
         path: ['images'],
         message: `At least ${MIN_IMAGES} image is required for ${data.category} listings.`,
+      });
+    }
+    if (!isValidSubcategory(data.category, data.subcategory)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['subcategory'],
+        message: 'Subcategory does not belong to the selected category.',
       });
     }
   });
@@ -123,6 +138,8 @@ export const listingUpdateSchema = z
     description: z.string().trim().min(10).optional(),
     price: z.number().int().nonnegative().optional(),
     featuredRequested: z.boolean().optional(),
+    // Subcategory editable on edit; category itself is not.
+    subcategory: z.string().trim().optional().nullable(),
     // Category-specific attributes (Edit Listing). Category itself is not editable.
     details: z.record(z.string()).optional(),
     // Full image set on edit (add/remove/reorder). Min-count rule is enforced in
@@ -154,6 +171,8 @@ const queryBool = z
 
 export const listingQuerySchema = z.object({
   category: z.enum(CATEGORIES).optional(),
+  subcategory: z.string().trim().optional(),
+  postingType: z.enum(POSTING_TYPES).optional(),
   status: z.enum(LISTING_STATUSES).optional(),
   userId: z.coerce.number().int().positive().optional(),
   featured: queryBool,
@@ -176,7 +195,14 @@ export const savedAddSchema = z.object({
 
 /* ── Business accounts (decision) ────────────────────────────────────────────── */
 
-export const businessDecisionSchema = z.object({
-  approved: z.boolean(),
-  paymentStatus: z.enum(['not_required', 'unpaid', 'paid']).optional(),
-});
+export const businessDecisionSchema = z
+  .object({
+    sellerStatus: z.enum(SELLER_STATUSES).optional(),
+    paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
+  })
+  .refine((d) => d.sellerStatus || d.paymentStatus, {
+    message: 'Provide sellerStatus and/or paymentStatus.',
+  });
+
+// Business account applies for Business Seller status — no body (account from token).
+export const sellerApplySchema = z.object({});
