@@ -28,6 +28,7 @@ function toProfile(user) {
       phone: '',
       area: '',
       canttPass: '',
+      avatar: '',
       joinDate: '',
       isVerified: false,
       emailVerified: false,
@@ -44,6 +45,7 @@ function toProfile(user) {
     phone: user.phone || '',
     area: user.residentLocation || '',
     canttPass: user.canttPassNumber || '',
+    avatar: user.avatarUrl || '',
     joinDate: formatJoinDate(user.createdAt),
     emailVerified: !!user.emailVerified,
     // Resident verification isn't a backend concept yet; treat a cantt pass as
@@ -135,6 +137,12 @@ export function AuthProvider({ children }) {
     clearAuthToken();
   }, []);
 
+  // Change password while signed in (requires the current password).
+  const changePassword = useCallback(
+    (currentPassword, newPassword) => authApi.changePassword(currentPassword, newPassword),
+    [],
+  );
+
   // updateProfile keeps the same call signature ProfilePage uses (profile-shaped
   // changes). Maps to the API's user fields and persists via PATCH /users/:id.
   const updateProfile = useCallback(
@@ -145,6 +153,8 @@ export function AuthProvider({ children }) {
       if (changes.phone !== undefined) payload.phone = changes.phone;
       if (changes.area !== undefined) payload.residentLocation = changes.area;
       if (changes.canttPass !== undefined) payload.canttPassNumber = changes.canttPass || null;
+      // avatar: data-URL string to set, or null to remove the photo.
+      if (changes.avatar !== undefined) payload.avatarUrl = changes.avatar || null;
       if (Object.keys(payload).length === 0) return;
       const res = await authApi.updateUser(user.id, payload);
       setUser((prev) => ({ ...prev, ...res.user }));
@@ -193,6 +203,7 @@ export function AuthProvider({ children }) {
         resetPassword,
         requestEmailChange,
         confirmEmailChange,
+        changePassword,
         logout,
         updateProfile,
         applyForBusiness,

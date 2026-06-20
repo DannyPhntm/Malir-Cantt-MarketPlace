@@ -26,6 +26,35 @@ const DROPDOWN_CATEGORIES = [
   { slug: 'food',       name: 'Food & Home Kitchen' },
 ];
 
+// Account dropdown destinations (shown when signed in).
+const ACCOUNT_LINKS = [
+  { label: 'My Profile',     to: '/profile' },
+  { label: 'My Listings',    to: '/my-listings' },
+  { label: 'Saved Listings', to: '/saved-listings' },
+  { label: 'Dashboard',      to: '/dashboard' },
+];
+
+function initialsOf(name) {
+  return (name || 'U')
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+// Avatar — photo when set, otherwise initials on a brand-green tile.
+function Avatar({ name, src, className = '' }) {
+  return (
+    <span className={`navbar__avatar${className ? ' ' + className : ''}`} aria-hidden="true">
+      {src
+        ? <img className="navbar__avatar-img" src={src} alt="" />
+        : <span className="navbar__avatar-initials">{initialsOf(name)}</span>}
+    </span>
+  );
+}
+
 const dropdownAnim = {
   initial:  { opacity: 0, y: -8, scale: 0.97 },
   animate:  { opacity: 1, y: 0,  scale: 1, transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] } },
@@ -41,9 +70,11 @@ const mobileCatsAnim = {
 export default function Navbar() {
   const [menuOpen, setMenuOpen]           = useState(false);
   const [dropdownOpen, setDropdownOpen]   = useState(false);
+  const [accountOpen, setAccountOpen]     = useState(false);
   const [mobileCatsOpen, setMobileCatsOpen] = useState(false);
   const [mobileQuery, setMobileQuery]     = useState('');
   const dropdownRef  = useRef(null);
+  const accountRef   = useRef(null);
   const { favorites, setIsOpen } = useFavorites();
   const { isAuthenticated, logout, user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -52,6 +83,7 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
+    setAccountOpen(false);
     closeMenu();
     navigate('/');
   };
@@ -69,23 +101,27 @@ export default function Navbar() {
     setMobileCatsOpen(false);
   };
 
-  // Close dropdown on outside click
+  // Close the category + account dropdowns on outside click
   useEffect(() => {
-    if (!dropdownOpen) return;
+    if (!dropdownOpen && !accountOpen) return;
     const handleClick = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
       }
+      if (accountRef.current && !accountRef.current.contains(e.target)) {
+        setAccountOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [dropdownOpen]);
+  }, [dropdownOpen, accountOpen]);
 
-  // Close dropdown and search on Escape
+  // Close dropdowns on Escape
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === 'Escape') {
         setDropdownOpen(false);
+        setAccountOpen(false);
       }
     };
     document.addEventListener('keydown', handleKey);
@@ -208,9 +244,60 @@ export default function Navbar() {
             </NavLink>
           )}
           {isAuthenticated ? (
-            <button type="button" className="navbar__join-btn" onClick={handleLogout}>Logout</button>
+            <div className="navbar__account-wrap" ref={accountRef}>
+              <button
+                className={`navbar__account-trigger${accountOpen ? ' navbar__account-trigger--open' : ''}`}
+                onClick={() => setAccountOpen(v => !v)}
+                aria-expanded={accountOpen}
+                aria-haspopup="menu"
+                aria-label="Account menu"
+              >
+                <Avatar name={user?.name} src={user?.avatarUrl} />
+                <svg className="navbar__account-chevron" width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+
+              <AnimatePresence>
+                {accountOpen && (
+                  <motion.div className="navbar__account-menu" role="menu" {...dropdownAnim}>
+                    <div className="navbar__account-head">
+                      <Avatar name={user?.name} src={user?.avatarUrl} className="navbar__avatar--lg" />
+                      <div className="navbar__account-id">
+                        <span className="navbar__account-name">{user?.name}</span>
+                        <span className="navbar__account-email">{user?.email}</span>
+                      </div>
+                    </div>
+                    <div className="navbar__account-list">
+                      {ACCOUNT_LINKS.map(item => (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          role="menuitem"
+                          className="navbar__account-item"
+                          onClick={() => setAccountOpen(false)}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="navbar__account-item navbar__account-logout"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           ) : (
-            <Link to="/login" className="navbar__join-btn">Join / Login</Link>
+            <>
+              <Link to="/login" className="navbar__join-btn">Login</Link>
+              <Link to="/login?register=1" className="navbar__join-btn navbar__join-btn--accent">Register</Link>
+            </>
           )}
           <Link to="/add-listing" className="navbar__cta">+ Add Listing</Link>
         </div>
@@ -302,6 +389,22 @@ export default function Navbar() {
               );
             })}
             <div className="navbar__mobile-divider" />
+
+            {isAuthenticated && (
+              <>
+                <div className="navbar__mobile-account-head">
+                  <Avatar name={user?.name} src={user?.avatarUrl} className="navbar__avatar--lg" />
+                  <div className="navbar__account-id">
+                    <span className="navbar__account-name">{user?.name}</span>
+                    <span className="navbar__account-email">{user?.email}</span>
+                  </div>
+                </div>
+                <Link to="/profile"     className="navbar__mobile-link" onClick={closeMenu}>My Profile</Link>
+                <Link to="/my-listings" className="navbar__mobile-link" onClick={closeMenu}>My Listings</Link>
+                <Link to="/dashboard"   className="navbar__mobile-link" onClick={closeMenu}>Dashboard</Link>
+              </>
+            )}
+
             <button
               className="navbar__mobile-link navbar__mobile-fav"
               onClick={() => { closeMenu(); setIsOpen(true); }}
@@ -320,7 +423,10 @@ export default function Navbar() {
             {isAuthenticated ? (
               <button type="button" className="navbar__join-btn navbar__join-btn--full" onClick={handleLogout}>Logout</button>
             ) : (
-              <Link to="/login" className="navbar__join-btn navbar__join-btn--full" onClick={closeMenu}>Join / Login</Link>
+              <>
+                <Link to="/login" className="navbar__join-btn navbar__join-btn--full" onClick={closeMenu}>Login</Link>
+                <Link to="/login?register=1" className="navbar__join-btn navbar__join-btn--full navbar__join-btn--accent" onClick={closeMenu}>Register</Link>
+              </>
             )}
             <Link to="/add-listing" className="navbar__cta navbar__cta--full"           onClick={closeMenu}>+ Add Listing</Link>
           </motion.div>

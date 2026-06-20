@@ -426,6 +426,197 @@
   background: var(--color-primary-pale);
 }
 
+/* ── Avatar ──────────────────────────────────────────────────────── */
+.navbar__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.navbar__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.navbar__avatar-initials {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+.navbar__avatar--lg {
+  width: 44px;
+  height: 44px;
+}
+
+.navbar__avatar--lg .navbar__avatar-initials {
+  font-size: 16px;
+}
+
+/* ── Account dropdown (signed in) ────────────────────────────────── */
+.navbar__account-wrap {
+  position: relative;
+}
+
+.navbar__account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 6px 0 2px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  transition:
+    border-color var(--duration-fast) var(--ease-default),
+    background var(--duration-fast) var(--ease-default),
+    transform var(--duration-base) var(--ease-default);
+}
+
+.navbar__account-trigger:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.02);
+}
+
+.navbar__account-trigger:active {
+  transform: scale(0.98);
+  transition-duration: 80ms;
+}
+
+.navbar__account-chevron {
+  transition: transform var(--duration-base) var(--ease-default);
+}
+
+.navbar__account-trigger--open .navbar__account-chevron {
+  transform: rotate(180deg);
+}
+
+.navbar__account-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 248px;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  z-index: 200;
+}
+
+.navbar__account-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.navbar__account-id {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.navbar__account-name {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar__account-email {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar__account-list {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2);
+}
+
+.navbar__account-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-ink);
+  text-align: left;
+  transition:
+    background var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default);
+}
+
+.navbar__account-item:hover {
+  background: var(--color-primary-pale);
+  color: var(--color-primary);
+}
+
+.navbar__account-logout {
+  margin: var(--space-1) var(--space-2) var(--space-2);
+  width: calc(100% - var(--space-4));
+  border-top: 1px solid var(--color-border-soft);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  color: var(--color-danger);
+  padding-top: var(--space-3);
+}
+
+.navbar__account-logout:hover {
+  background: #fff1f1;
+  color: var(--color-danger);
+}
+
+/* Accent variant of the ghost button (Register) */
+.navbar__join-btn--accent {
+  border-color: rgba(110, 207, 148, 0.5);
+  background: rgba(110, 207, 148, 0.14);
+  color: #ffffff;
+}
+
+.navbar__join-btn--accent:hover {
+  border-color: rgba(110, 207, 148, 0.8);
+  background: rgba(110, 207, 148, 0.22);
+}
+
+/* Mobile account header inside the slide-down menu */
+.navbar__mobile-account-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-3);
+}
+
+.navbar__mobile-account-head .navbar__account-name,
+.navbar__mobile-account-head .navbar__account-email {
+  color: #ffffff;
+}
+
+.navbar__mobile-account-head .navbar__account-email {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 /* ── Mobile categories sub-list ──────────────────────────────────── */
 .navbar__mobile-cat-toggle {
   display: flex;

@@ -177,6 +177,24 @@ export const resetPassword = asyncHandler(async (req, res) => {
   res.json({ reset: true });
 });
 
+/* POST /api/auth/change-password (auth)
+   Changes the password for the signed-in user. Requires the current password
+   to be re-entered and verified before the new one is set. */
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  if (!user) throw new ApiError(404, 'User not found.');
+
+  const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!ok) throw new ApiError(400, 'Your current password is incorrect.');
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+
+  res.json({ changed: true });
+});
+
 /* POST /api/auth/request-email-change (auth)
    Sends a verification code to the NEW address. The change is only applied once
    the user proves control of that address via /confirm-email-change. */

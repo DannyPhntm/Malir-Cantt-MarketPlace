@@ -1,11 +1,37 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PageTransition from '../components/PageTransition';
+import listingsApi from '../services/listingsApi';
+import { adaptListing } from '../services/listingAdapter';
+import { computeListingStats } from '../lib/listingStats';
 import { dur, ease } from '../animations';
 import './ProfilePage.css';
+
+// Downscale + compress an image File to a square-ish JPEG data-URL so avatars
+// stay small enough to store inline (base64) in the user row.
+function fileToAvatarDataUrl(file, max = 256, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that image.')); };
+    img.src = url;
+  });
+}
 
 const BUSINESS_CATEGORIES = [
   'Vehicles', 'Technology', 'Property', 'Furniture',
@@ -36,6 +62,29 @@ function ChevronIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  );
+}
+
+function CameraIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+  );
+}
+
+function EyeIcon({ off }) {
+  return off ? (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  ) : (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
     </svg>
   );
 }
@@ -284,6 +333,202 @@ function SectionCard({ title, children, className = '' }) {
   );
 }
 
+/* ── Avatar editor ───────────────────────────────────────────────────────────── */
+// The photo persists immediately on change/remove via updateProfile (its own
+// save), independent of the Edit Profile form below.
+
+function AvatarEditor({ name, avatar }) {
+  const { updateProfile } = useAuth();
+  const fileRef = useRef(null);
+  const [busy, setBusy]   = useState(false);
+  const [error, setError] = useState('');
+
+  const initials = (name || 'U')
+    .split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+  const pick = () => fileRef.current?.click();
+
+  const onFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setError('Please choose an image file.'); return; }
+    setBusy(true); setError('');
+    try {
+      const dataUrl = await fileToAvatarDataUrl(file);
+      await updateProfile({ avatar: dataUrl });
+    } catch (err) {
+      setError(err?.message || 'Could not update your photo. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true); setError('');
+    try {
+      await updateProfile({ avatar: null });
+    } catch (err) {
+      setError(err?.message || 'Could not remove your photo. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="prf-avatar-edit">
+      <button
+        type="button"
+        className={`prf-avatar prf-avatar--editable${busy ? ' prf-avatar--busy' : ''}`}
+        onClick={pick}
+        disabled={busy}
+        aria-label="Change profile photo"
+      >
+        {avatar
+          ? <img className="prf-avatar__img" src={avatar} alt="" />
+          : <span className="prf-avatar__initials">{initials}</span>}
+        <span className="prf-avatar__overlay" aria-hidden="true"><CameraIcon /></span>
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
+      <div className="prf-avatar-actions">
+        <button type="button" className="prf-avatar-link" onClick={pick} disabled={busy}>
+          {busy ? 'Saving…' : avatar ? 'Change photo' : 'Add photo'}
+        </button>
+        {avatar && !busy && (
+          <button type="button" className="prf-avatar-link prf-avatar-link--danger" onClick={remove}>
+            Remove
+          </button>
+        )}
+      </div>
+      {error && <p className="prf-field__error" role="alert">{error}</p>}
+    </div>
+  );
+}
+
+/* ── Password input with show/hide ───────────────────────────────────────────── */
+
+function PasswordInput({ name, value, onChange, placeholder, autoComplete }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="prf-pw-wrap">
+      <input
+        className="prf-field__input"
+        type={show ? 'text' : 'password'}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+      />
+      <button
+        type="button"
+        className="prf-pw-toggle"
+        onClick={() => setShow(v => !v)}
+        aria-label={show ? 'Hide password' : 'Show password'}
+        tabIndex={-1}
+      >
+        <EyeIcon off={show} />
+      </button>
+    </div>
+  );
+}
+
+/* ── Password change flow ────────────────────────────────────────────────────── */
+
+function PasswordChangeSection() {
+  const { changePassword } = useAuth();
+  const [open, setOpen]   = useState(false);
+  const [form, setForm]   = useState({ current: '', next: '', confirm: '' });
+  const [busy, setBusy]   = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone]   = useState(false);
+
+  const reset = () => {
+    setForm({ current: '', next: '', confirm: '' });
+    setError(''); setBusy(false); setDone(false);
+  };
+  const close = () => { reset(); setOpen(false); };
+
+  const change = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    if (error) setError('');
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.current)            { setError('Enter your current password.'); return; }
+    if (form.next.length < 8)     { setError('New password must be at least 8 characters.'); return; }
+    if (form.next !== form.confirm) { setError('New passwords do not match.'); return; }
+    setBusy(true); setError('');
+    try {
+      await changePassword(form.current, form.next);
+      setForm({ current: '', next: '', confirm: '' });
+      setDone(true);
+    } catch (err) {
+      setError(err?.message || 'Could not change your password. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button type="button" className="prf-email-change__toggle" onClick={() => setOpen(true)}>
+        Change password
+      </button>
+    );
+  }
+
+  if (done) {
+    return (
+      <div className="prf-email-change prf-email-change--open">
+        <div className="prf-email-change__panel prf-email-change__panel--done">
+          <p className="prf-email-change__heading"><CheckCircleIcon /> Password updated</p>
+          <p className="prf-email-change__sub">Your password has been changed.</p>
+          <div className="prf-email-change__actions">
+            <button type="button" className="prf-save-btn" onClick={close}>Done</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form className="prf-email-change prf-email-change--open" onSubmit={submit} noValidate>
+      <div className="prf-email-change__panel">
+        <p className="prf-email-change__heading">Change password</p>
+        <p className="prf-email-change__sub">
+          Enter your current password, then choose a new one (at least 8 characters).
+        </p>
+        <div className="prf-pw-fields">
+          <PasswordInput
+            name="current" value={form.current} onChange={change}
+            placeholder="Current password" autoComplete="current-password"
+          />
+          <PasswordInput
+            name="next" value={form.next} onChange={change}
+            placeholder="New password" autoComplete="new-password"
+          />
+          <PasswordInput
+            name="confirm" value={form.confirm} onChange={change}
+            placeholder="Confirm new password" autoComplete="new-password"
+          />
+        </div>
+        {error && <p className="prf-field__error" role="alert">{error}</p>}
+        <div className="prf-email-change__actions">
+          <button type="submit" className="prf-save-btn" disabled={busy}>
+            {busy ? 'Updating…' : 'Update Password'}
+          </button>
+          <button type="button" className="prf-cancel-btn" onClick={close} disabled={busy}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
 /* ── Page ────────────────────────────────────────────────────────────────────── */
 
 // Business fields default to empty if not in profile. Module-level so the
@@ -291,7 +536,7 @@ function SectionCard({ title, children, className = '' }) {
 const BLANK_BUSINESS = { businessName: '', businessCategory: '', businessArea: '' };
 
 export default function ProfilePage() {
-  const { profile, updateProfile, userType } = useAuth();
+  const { profile, updateProfile, userType, businessStatus } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [saved,     setSaved]     = useState(false);
@@ -301,12 +546,18 @@ export default function ProfilePage() {
 
   const [form, setForm] = useState({ ...BLANK_BUSINESS, ...profile });
 
-  const initials = (profile.name || 'U')
-    .split(' ')
-    .map(w => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+  // Listing counts for the account summary (total + active).
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    let active = true;
+    listingsApi
+      .mine()
+      .then((res) => {
+        if (active) setStats(computeListingStats((res.listings || []).map(adaptListing)));
+      })
+      .catch(() => { /* non-critical; counts simply stay hidden */ });
+    return () => { active = false; };
+  }, []);
 
   const handleEdit = useCallback(() => {
     setForm({ ...BLANK_BUSINESS, ...profile });
@@ -405,7 +656,7 @@ export default function ProfilePage() {
           >
             <SectionCard>
               <div className="prf-summary">
-                <div className="prf-avatar" aria-hidden="true">{initials}</div>
+                <AvatarEditor name={profile.name} avatar={profile.avatar} />
                 <div className="prf-summary__info">
                   <div className="prf-summary__name-row">
                     <span className="prf-summary__name">{profile.name}</span>
@@ -497,6 +748,20 @@ export default function ProfilePage() {
             </SectionCard>
           </motion.div>
 
+          {/* ── Security (password) ──────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1,  y: 0 }}
+            transition={{ duration: dur.slow, ease: ease.out, delay: 0.08 }}
+          >
+            <SectionCard title="Security">
+              <p className="prf-security__hint">
+                Keep your account secure. Changing your password signs you out of nothing — you stay logged in here.
+              </p>
+              <PasswordChangeSection />
+            </SectionCard>
+          </motion.div>
+
           {/* ── Business Profile ─────────────────────────────────────────── */}
           {userType === 'business' && (
             <motion.div
@@ -545,6 +810,18 @@ export default function ProfilePage() {
                     {userType === 'business' ? 'Business Account' : 'Personal Account'}
                   </span>
                 </div>
+                {userType === 'business' && (
+                  <div className="prf-account-row">
+                    <span className="prf-account-label">Business Status</span>
+                    <span className={`prf-account-value prf-biz-status prf-biz-status--${businessStatus}`}>
+                      {businessStatus === 'approved'
+                        ? 'Approved'
+                        : businessStatus === 'pending'
+                          ? 'Pending approval'
+                          : 'Not applied'}
+                    </span>
+                  </div>
+                )}
                 <div className="prf-account-row">
                   <span className="prf-account-label">Verification</span>
                   {profile.isVerified
@@ -562,6 +839,14 @@ export default function ProfilePage() {
                     <span className="prf-account-value">{profile.joinDate}</span>
                   </div>
                 )}
+                <div className="prf-account-row">
+                  <span className="prf-account-label">Total Listings</span>
+                  <span className="prf-account-value">{stats ? stats.total : '—'}</span>
+                </div>
+                <div className="prf-account-row">
+                  <span className="prf-account-label">Active Listings</span>
+                  <span className="prf-account-value">{stats ? stats.active : '—'}</span>
+                </div>
               </div>
             </SectionCard>
           </motion.div>

@@ -7,7 +7,7 @@
 .prf-inner {
   max-width: 760px;
   margin: 0 auto;
-  padding: var(--space-8) var(--space-5) var(--space-16);
+  padding: var(--space-8) var(--space-6) var(--space-16);
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -16,7 +16,7 @@
 /* ── Dark header ─────────────────────────────────────────────────────────────── */
 .prf-header {
   background: #0d2a1a;
-  padding: var(--space-8) var(--space-5);
+  padding: var(--space-8) var(--space-6);
 }
 
 .prf-header__inner {
@@ -118,6 +118,7 @@
 }
 
 .prf-avatar {
+  position: relative;
   width: 68px;
   height: 68px;
   border-radius: var(--radius-full);
@@ -132,6 +133,86 @@
   justify-content: center;
   flex-shrink: 0;
   user-select: none;
+  overflow: hidden;
+}
+
+/* ── Avatar editor ───────────────────────────────────────────────────── */
+.prf-avatar-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.prf-avatar--editable {
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.prf-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.prf-avatar__initials {
+  line-height: 1;
+}
+
+/* Camera overlay — appears on hover/focus of the editable avatar */
+.prf-avatar__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: rgba(13, 42, 26, 0.55);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-default);
+}
+
+.prf-avatar--editable:hover .prf-avatar__overlay,
+.prf-avatar--editable:focus-visible .prf-avatar__overlay,
+.prf-avatar--busy .prf-avatar__overlay {
+  opacity: 1;
+}
+
+.prf-avatar--busy {
+  cursor: default;
+}
+
+.prf-avatar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.prf-avatar-link {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.prf-avatar-link:hover {
+  text-decoration: underline;
+}
+
+.prf-avatar-link--danger {
+  color: var(--color-danger);
+}
+
+.prf-avatar-link:disabled {
+  color: var(--color-secondary);
+  cursor: default;
+  text-decoration: none;
 }
 
 .prf-summary__info {
@@ -615,8 +696,12 @@
     width: 100%;
   }
 
+  .prf-header {
+    padding: var(--space-8) var(--space-5);
+  }
+
   .prf-inner {
-    padding: var(--space-6) var(--space-4) var(--space-12);
+    padding: var(--space-6) var(--space-5) var(--space-12);
   }
 
   .prf-card {
@@ -634,4 +719,59 @@
     height: 56px;
     font-size: 20px;
   }
+}
+
+/* ── Security / password change ──────────────────────────────────────── */
+.prf-security__hint {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+  color: var(--color-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.prf-pw-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.prf-pw-wrap {
+  position: relative;
+}
+
+.prf-pw-wrap .prf-field__input {
+  padding-right: 44px;
+  width: 100%;
+}
+
+.prf-pw-toggle {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.prf-pw-toggle:hover {
+  color: var(--color-ink);
+}
+
+/* Business status value tints */
+.prf-biz-status--approved {
+  color: var(--color-primary);
+  font-weight: var(--fw-semibold);
+}
+
+.prf-biz-status--pending {
+  color: #8a6d1f;
+  font-weight: var(--fw-semibold);
 }

@@ -7,6 +7,7 @@ import {
   resendVerificationSchema,
   requestResetSchema,
   resetPasswordSchema,
+  changePasswordSchema,
   requestEmailChangeSchema,
   confirmEmailChangeSchema,
 } from '../validators/schemas.js';
@@ -22,6 +23,12 @@ router.post('/login', validate(loginSchema), auth.login);
 router.get('/me', requireAuth, auth.me);
 router.post('/request-password-reset', validate(requestResetSchema), auth.requestPasswordReset);
 router.post('/reset-password', validate(resetPasswordSchema), auth.resetPassword);
+router.post(
+  '/change-password',
+  requireAuth,
+  validate(changePasswordSchema),
+  auth.changePassword,
+);
 router.post(
   '/request-email-change',
   requireAuth,

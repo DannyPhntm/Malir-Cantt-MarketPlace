@@ -18,6 +18,10 @@ export const authApi = {
   resetPassword: (email, code, password) =>
     apiClient.post('/auth/reset-password', { email, code, password }),
 
+  // Change password while signed in — requires the current password (auth).
+  changePassword: (currentPassword, newPassword) =>
+    apiClient.post('/auth/change-password', { currentPassword, newPassword }),
+
   // Email change — verifies the NEW address before swapping it (auth required).
   requestEmailChange: (newEmail) => apiClient.post('/auth/request-email-change', { newEmail }),
 

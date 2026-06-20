@@ -41,8 +41,17 @@ export const updateUserSchema = z
     phone: phone.optional(),
     residentLocation: z.string().trim().min(2).optional(),
     canttPassNumber: z.string().trim().nullable().optional(),
+    // Profile photo: a base64 data-URL (or external URL), or null to remove it.
+    // Capped to keep payloads sane — the client compresses before sending.
+    avatarUrl: z.string().trim().max(1_500_000).nullable().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, { message: 'No fields to update.' });
+
+// Change password while authenticated — requires the current password.
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required.'),
+  newPassword: password,
+});
 
 // Admin user list — optional name/email search. (role/accountType are NOT
 // editable via any schema, so accounts cannot self-promote to admin.)

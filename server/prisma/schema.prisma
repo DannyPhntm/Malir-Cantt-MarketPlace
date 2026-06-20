@@ -26,6 +26,7 @@ model User {
   phone            String
   canttPassNumber  String?  @map("cantt_pass_number")
   residentLocation String   @map("resident_location")
+  avatarUrl        String?  @map("avatar_url") // base64 data-URL or external URL; null = use initials
   accountType      String   @default("personal") @map("account_type") // personal | business
   role             String   @default("user") // user | admin
   businessVerified Boolean  @default(false) @map("business_verified")
