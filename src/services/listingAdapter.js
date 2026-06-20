@@ -4,17 +4,17 @@
 
 import { CATEGORY_CONFIG } from '../data/categoryConfig';
 
-const CATEGORY_DISPLAY = {
-  vehicles: 'Vehicles',
-  technology: 'Technology',
-  property: 'Property',
-  furniture: 'Furniture',
-  jobs: 'Jobs',
-  services: 'Services',
-  gym: 'Gym & Fitness',
-  shoes: 'Shoes & Footwear',
-  food: 'Food & Home Kitchen',
-};
+// Display label per category slug, derived from the taxonomy single source.
+const CATEGORY_DISPLAY = Object.fromEntries(
+  Object.entries(CATEGORY_CONFIG).map(([slug, cfg]) => [slug, cfg.label]),
+);
+
+// Look up a subcategory's display label within its category.
+function subcategoryLabel(categorySlug, sub) {
+  if (!sub) return null;
+  const found = (CATEGORY_CONFIG[categorySlug]?.subcategories || []).find((s) => s.slug === sub);
+  return found?.label || sub;
+}
 
 // Parse the stored details JSON (string) into a flat object.
 function parseDetails(raw) {
@@ -98,6 +98,9 @@ export function adaptListing(listing) {
     description: listing.description,
     categorySlug: listing.category,
     category: CATEGORY_DISPLAY[listing.category] || listing.category,
+    subcategory: listing.subcategory || null,
+    subcategoryLabel: subcategoryLabel(listing.category, listing.subcategory),
+    postingType: listing.postingType || 'personal',
     details,
     meta: buildMeta(listing.category, details),
     price: formatPrice(listing.price),

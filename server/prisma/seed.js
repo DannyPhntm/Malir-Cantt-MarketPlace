@@ -61,7 +61,7 @@ async function main() {
       emailVerified: true,
       businessVerified: true,
       businessAccount: {
-        create: { businessName: 'Fatima Interiors', approved: true, paymentStatus: 'not_required' },
+        create: { businessName: 'Fatima Interiors', businessType: 'home-decor', sellerStatus: 'approved', paymentStatus: 'waived' },
       },
     },
   });
@@ -77,7 +77,7 @@ async function main() {
       emailVerified: true,
       // Applied but NOT yet approved — businessVerified stays false.
       businessAccount: {
-        create: { businessName: 'TechHire PK', approved: false, paymentStatus: 'not_required' },
+        create: { businessName: 'TechHire PK', businessType: 'services', sellerStatus: 'pending', paymentStatus: 'payment_required' },
       },
     },
   });
@@ -115,7 +115,9 @@ async function main() {
       title: 'Solid Sheesham Wood Dining Table — 6 Seater',
       description:
         'Handcrafted sheesham dining table with six chairs. Premium polish finish. Custom sizes available. Delivery within Malir Cantt included.',
-      category: 'furniture',
+      category: 'home-living',
+      subcategory: 'furniture',
+      postingType: 'business',
       price: 85000,
       status: 'approved',
       details: JSON.stringify({
@@ -155,6 +157,8 @@ async function main() {
       description:
         'Professional home renovation, painting, tiling, and plumbing. 15 years experience in Malir Cantt. Free estimate visit. 1-year work guarantee.',
       category: 'services',
+      subcategory: 'repair',
+      postingType: 'business',
       price: 150,
       status: 'approved',
       details: JSON.stringify({
@@ -172,6 +176,8 @@ async function main() {
       description:
         'Freshly prepared homemade lasagna, fudgy brownies, and custom party platters. Made to order with quality ingredients. Advance order required for large quantities. Delivery within Malir Cantt.',
       category: 'food',
+      subcategory: 'home-food',
+      postingType: 'business',
       price: 1500,
       status: 'approved',
       details: JSON.stringify({

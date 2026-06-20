@@ -57,7 +57,7 @@ export const getStats = asyncHandler(async (req, res) => {
     // Featured requested but not yet activated by an admin.
     prisma.listing.count({ where: { featuredRequested: true, featuredActive: false } }),
     prisma.businessAccount.count(),
-    prisma.businessAccount.count({ where: { approved: false } }),
+    prisma.businessAccount.count({ where: { sellerStatus: 'pending' } }),
   ]);
 
   res.json({
