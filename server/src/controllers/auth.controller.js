@@ -21,7 +21,7 @@ function publicUser(user) {
    then issues an email verification code and emails it to the user. The code is
    never returned in the response. */
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, password, phone, accountType, residentLocation, canttPassNumber, businessName } =
+  const { name, email, password, phone, accountType, residentLocation, canttPassNumber, businessName, businessType } =
     req.body;
 
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -55,10 +55,18 @@ export const register = asyncHandler(async (req, res) => {
         accountType,
         residentLocation,
         canttPassNumber: canttPassNumber || null,
-        // Business accounts start unverified + pending approval.
+        // Business accounts start as not-yet-applied Business Sellers; they apply
+        // separately and an admin approves (never auto-approved).
         businessAccount:
           accountType === 'business'
-            ? { create: { businessName: businessName || name, approved: false } }
+            ? {
+                create: {
+                  businessName: businessName || name,
+                  businessType: businessType || null,
+                  sellerStatus: 'not_applied',
+                  paymentStatus: 'payment_required',
+                },
+              }
             : undefined,
       },
       include: { businessAccount: true },
