@@ -90,7 +90,7 @@ export default function AdminPage() {
       const [sres, fres, bres, ures] = await Promise.all([
         adminApi.getStats(),
         adminApi.listFeaturedRequests(),
-        adminApi.listBusinessAccounts(false),
+        adminApi.listBusinessAccounts('pending'),
         adminApi.listUsers(),
       ]);
       setStats(sres.stats);
@@ -169,12 +169,18 @@ export default function AdminPage() {
     }
   };
 
-  const decideBusiness = async (id, approved, label) => {
+  // body: { sellerStatus?, paymentStatus? }. `remove` drops the row from the
+  // pending queue (approve/reject); payment-only changes keep it and patch in place.
+  const decideBusiness = async (id, body, label, remove) => {
     setBusyId(`b${id}`);
     setError(null);
     try {
-      await adminApi.decideBusiness(id, { approved });
-      setBusinesses((prev) => prev.filter((b) => b.id !== id));
+      const res = await adminApi.decideBusiness(id, body);
+      setBusinesses((prev) =>
+        remove
+          ? prev.filter((b) => b.id !== id)
+          : prev.map((b) => (b.id === id ? { ...b, ...res.businessAccount } : b)),
+      );
       showFlash(label);
       refreshStats();
     } catch (e) {
@@ -460,7 +466,9 @@ export default function AdminPage() {
                         <div className="admin__row-main">
                           <div className="admin__row-top">
                             <span className="admin__row-title">{b.businessName}</span>
+                            <span className="admin__tag">Seller: {b.sellerStatus}</span>
                             <span className="admin__tag">Payment: {b.paymentStatus}</span>
+                            {b.businessType && <span className="admin__tag">Type: {b.businessType}</span>}
                           </div>
                           <div className="admin__row-meta">
                             <span>{b.user?.name}</span>
@@ -476,13 +484,25 @@ export default function AdminPage() {
                         </div>
                         <div className="admin__row-actions">
                           <button className="admin__btn admin__btn--approve" disabled={busy}
-                            onClick={() => decideBusiness(b.id, true, 'Business approved')}>
+                            onClick={() => decideBusiness(b.id, { sellerStatus: 'approved' }, 'Business Seller approved', true)}>
                             <CheckIcon /> Approve
                           </button>
                           <button className="admin__btn admin__btn--reject" disabled={busy}
-                            onClick={() => decideBusiness(b.id, false, 'Business rejected')}>
+                            onClick={() => decideBusiness(b.id, { sellerStatus: 'rejected' }, 'Business Seller rejected', true)}>
                             <XIcon /> Reject
                           </button>
+                          {b.paymentStatus !== 'waived' && (
+                            <button className="admin__btn" disabled={busy}
+                              onClick={() => decideBusiness(b.id, { paymentStatus: 'waived' }, 'Payment waived', false)}>
+                              Waive payment
+                            </button>
+                          )}
+                          {b.paymentStatus !== 'paid' && (
+                            <button className="admin__btn" disabled={busy}
+                              onClick={() => decideBusiness(b.id, { paymentStatus: 'paid' }, 'Marked paid', false)}>
+                              Mark paid
+                            </button>
+                          )}
                         </div>
                       </li>
                     );
