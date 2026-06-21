@@ -28,6 +28,9 @@ export const authApi = {
   confirmEmailChange: (newEmail, code) =>
     apiClient.post('/auth/confirm-email-change', { newEmail, code }),
 
+  // Business account applies for Business Seller status (-> pending).
+  applyForSeller: () => apiClient.post('/business-accounts/apply', {}),
+
   // Current user from the bearer token (session rehydration).
   me: () => apiClient.get('/auth/me'),
 

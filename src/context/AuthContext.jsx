@@ -34,6 +34,9 @@ function toProfile(user) {
       emailVerified: false,
       badgeType: 'resident',
       businessName: null,
+      businessType: null,
+      sellerStatus: 'not_applied',
+      paymentStatus: 'payment_required',
       businessRequest: null,
     };
   }
@@ -53,6 +56,9 @@ function toProfile(user) {
     isVerified: isBusiness ? !!user.businessVerified : !!user.canttPassNumber,
     badgeType: isBusiness ? 'business' : 'resident',
     businessName: user.businessAccount?.businessName || null,
+    businessType: user.businessAccount?.businessType || null,
+    sellerStatus: user.businessAccount?.sellerStatus || 'not_applied',
+    paymentStatus: user.businessAccount?.paymentStatus || 'payment_required',
     businessRequest: user.businessAccount || null,
   };
 }
@@ -171,21 +177,31 @@ export function AuthProvider({ children }) {
         ? {
             ...prev,
             accountType: 'business',
-            businessAccount: { businessName, approved: false, paymentStatus: 'not_required' },
+            businessAccount: { businessName, sellerStatus: 'not_applied', paymentStatus: 'payment_required' },
           }
         : prev,
     );
   }, []);
 
+  // Apply for Business Seller status, then refresh the session so the new
+  // sellerStatus ('pending') is reflected everywhere.
+  const applyForBusinessSeller = useCallback(async () => {
+    const res = await authApi.applyForSeller();
+    const me = await authApi.me();
+    setUser(me.user);
+    return res;
+  }, []);
+
   const profile = toProfile(user);
   const userType = user?.accountType || 'personal';
   const businessRequest = user?.businessAccount || null;
-  const businessStatus = businessRequest
-    ? businessRequest.approved
-      ? 'approved'
-      : 'pending'
-    : 'none';
+  const sellerStatus = businessRequest?.sellerStatus || 'not_applied';
+  const paymentStatus = businessRequest?.paymentStatus || 'payment_required';
+  // Back-compat: businessStatus now mirrors sellerStatus ('not_applied' replaces 'none').
+  const businessStatus = sellerStatus;
   const isApprovedBusiness = !!user?.businessVerified;
+  const isApprovedSeller =
+    sellerStatus === 'approved' && (paymentStatus === 'paid' || paymentStatus === 'waived');
 
   return (
     <AuthContext.Provider
@@ -207,12 +223,16 @@ export function AuthProvider({ children }) {
         logout,
         updateProfile,
         applyForBusiness,
+        applyForBusinessSeller,
         // derived profile (backward-compatible shape)
         profile,
         userType,
         businessRequest,
         businessStatus,
+        sellerStatus,
+        paymentStatus,
         isApprovedBusiness,
+        isApprovedSeller,
       }}
     >
       {children}

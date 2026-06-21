@@ -33,6 +33,36 @@ export const STATUS_LABELS = {
   [APPLICATION_STATUS.REJECTED]: 'Rejected',
 };
 
+/* Business Seller status — mirrors the backend business_accounts.seller_status
+   (note: 'not_applied', not the legacy 'none'). */
+export const SELLER_STATUS = {
+  NOT_APPLIED: 'not_applied',
+  PENDING:     'pending',
+  APPROVED:    'approved',
+  REJECTED:    'rejected',
+};
+export const SELLER_STATUS_LABELS = {
+  not_applied: 'Not Applied',
+  pending:     'Pending Approval',
+  approved:    'Approved',
+  rejected:    'Rejected',
+};
+
+/* Business Seller payment readiness — mirrors business_accounts.payment_status.
+   No gateway yet: admin waives or marks paid for beta. */
+export const SELLER_PAYMENT_STATUS = {
+  REQUIRED: 'payment_required',
+  PENDING:  'payment_pending',
+  PAID:     'paid',
+  WAIVED:   'waived',
+};
+export const SELLER_PAYMENT_STATUS_LABELS = {
+  payment_required: 'Payment Required',
+  payment_pending:  'Payment Pending',
+  paid:             'Paid',
+  waived:           'Waived',
+};
+
 /* ──────────────────────────────────────────────────────────────────────────
  * Payment state (independent of approval)
  *

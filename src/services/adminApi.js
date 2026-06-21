@@ -20,9 +20,10 @@ export const adminApi = {
   setListingStatus: (id, body) => apiClient.patch(`/listings/${id}/status`, body),
   deleteListing: (id) => apiClient.del(`/listings/${id}`),
 
-  // Business applications queue
-  listBusinessAccounts: (approved) =>
-    apiClient.get(`/business-accounts${approved === undefined ? '' : `?approved=${approved}`}`),
+  // Business Seller applications queue (filter by seller_status).
+  listBusinessAccounts: (status) =>
+    apiClient.get(`/business-accounts${status ? `?status=${status}` : ''}`),
+  // body: { sellerStatus?, paymentStatus? }
   decideBusiness: (id, body) => apiClient.patch(`/business-accounts/${id}/decision`, body),
 };
 
