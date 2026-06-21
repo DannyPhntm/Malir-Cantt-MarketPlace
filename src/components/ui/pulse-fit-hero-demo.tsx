@@ -16,7 +16,7 @@ export default function PulseFitHeroDemo() {
         onClick: () => {},
       }}
       title="Find Everything Inside Malir Cantt."
-      subtitle="Buy, sell, and connect with your neighbours. The trusted marketplace exclusively for Malir Cantt residents."
+      subtitle="Buy, sell, hire, and discover with your neighbours. The community bazaar for Malir Cantt residents."
       primaryAction={{
         label: "Browse listings",
         onClick: () => {},

@@ -1,136 +1,94 @@
+import { lazy, Suspense } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
-import { PulseFitHero } from './components/ui/pulse-fit-hero';
-import FeaturedListings from './components/FeaturedListings';
-import RecentlyViewed from './components/RecentlyViewed';
+import Footer from './components/Footer';
 import FavoritesDrawer from './components/FavoritesDrawer';
-import { FavoritesProvider } from './context/FavoritesContext';
+import ScrollToTop from './components/ScrollToTop';
+import LoadingState from './components/LoadingState';
+import HomePage from './pages/HomePage';
+
+// Route-level code splitting. HomePage stays eager (it's the landing route, so
+// there's no point deferring it). Every other page is loaded on demand, which
+// keeps the initial bundle small and speeds up first paint. The Suspense
+// fallback below covers the brief chunk fetch on first visit to each route.
+const CategoryPage = lazy(() => import('./pages/CategoryPage'));
+const ListingDetailPage = lazy(() => import('./pages/ListingDetailPage'));
+const AddListingPage = lazy(() => import('./pages/AddListingPage'));
+const EditListingPage = lazy(() => import('./pages/EditListingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const AllListingsPage = lazy(() => import('./pages/AllListingsPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const MyListingsPage = lazy(() => import('./pages/MyListingsPage'));
+const SavedListingsPage = lazy(() => import('./pages/SavedListingsPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SellerProfilePage = lazy(() => import('./pages/SellerProfilePage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+
+// Gate a route behind authentication. Unauthenticated users are sent to the
+// login page with a `redirect` param so they return here after signing in.
+function RequireAuth({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+  // Wait for session rehydration before deciding — otherwise a refresh on a
+  // protected route would bounce a logged-in user to login mid-load.
+  if (loading) return null;
+  if (!isAuthenticated) {
+    const dest = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${dest}`} replace />;
+  }
+  return children;
+}
+
+// Admin-only gate. Requires auth + the `admin` role; others are redirected.
+function RequireAdmin({ children }) {
+  const { isAuthenticated, loading, user } = useAuth();
+  const location = useLocation();
+  if (loading) return null;
+  if (!isAuthenticated) {
+    const dest = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${dest}`} replace />;
+  }
+  if (user?.role !== 'admin') return <Navigate to="/" replace />;
+  return children;
+}
 
 export default function App() {
+  const location = useLocation();
+
   return (
-    <FavoritesProvider>
+    <>
+      <ScrollToTop />
       <Navbar />
       <FavoritesDrawer />
-      <main>
-        <PulseFitHero
-          showHeader={false}
-          backgroundImage="/malir-cantt-gate.png"
-          title="Find Everything"
-          titleAccent="Inside Malir Cantt."
-          subtitle="Buy, sell, and connect with your neighbours. The trusted marketplace exclusively for Malir Cantt residents."
-          showSearch={true}
-          searchPlaceholder="Search for cars, electronics, property..."
-          onSearch={(q) => console.log('search:', q)}
-          popularTags={['Cars', 'Phones', 'Apartments', 'Jobs', 'Furniture', 'Services']}
-          trustStats={[
-            {
-              value: '482+',
-              label: 'Active Listings',
-              icon: (
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <rect x="1" y="1" width="10" height="10" rx="2" />
-                  <line x1="3.5" y1="4" x2="8.5" y2="4" />
-                  <line x1="3.5" y1="6.5" x2="7" y2="6.5" />
-                  <line x1="3.5" y1="9" x2="8" y2="9" />
-                </svg>
-              ),
-            },
-            {
-              value: '6',
-              label: 'Categories',
-              icon: (
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <rect x="1" y="1" width="4" height="4" rx="1" />
-                  <rect x="7" y="1" width="4" height="4" rx="1" />
-                  <rect x="1" y="7" width="4" height="4" rx="1" />
-                  <rect x="7" y="7" width="4" height="4" rx="1" />
-                </svg>
-              ),
-            },
-            {
-              value: 'Updated',
-              label: 'Daily',
-              icon: (
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <circle cx="6" cy="6" r="4.5" />
-                  <path d="M6 3.5v2.5l1.5 1.5" />
-                </svg>
-              ),
-            },
-            {
-              value: 'Verified',
-              label: 'Residents',
-              icon: (
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <circle cx="4.5" cy="3.5" r="1.5" />
-                  <path d="M1.5 10c0-1.66 1.34-3 3-3s3 1.34 3 3" />
-                  <circle cx="8.5" cy="3.5" r="1.5" />
-                  <path d="M10.5 10c0-1.66-1.34-3-3-3" />
-                </svg>
-              ),
-            },
-          ]}
-          programs={[
-            {
-              image: '/categories/vehicles.png',
-              category: 'Vehicles',
-              title: 'Browse Vehicles',
-              count: '1,250 active listings',
-              href: '/category/vehicles',
-            },
-            {
-              image: '/categories/technology.png',
-              category: 'Technology',
-              title: 'Phones & Gadgets',
-              count: '850 active listings',
-              href: '/category/technology',
-            },
-            {
-              image: '/categories/property.png',
-              category: 'Property',
-              title: 'Homes & Apartments',
-              count: '320 active listings',
-              href: '/category/property',
-            },
-            {
-              image: '/categories/furniture.png',
-              category: 'Furniture',
-              title: 'Home & Living',
-              count: '450 active listings',
-              href: '/category/furniture',
-            },
-            {
-              image: '/categories/jobs.png',
-              category: 'Jobs',
-              title: 'Local Opportunities',
-              count: '210 active listings',
-              href: '/category/jobs',
-            },
-            {
-              image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=300&fit=crop',
-              category: 'Services',
-              title: 'Local Services',
-              count: '680 active listings',
-              href: '/category/services',
-            },
-            {
-              image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=300&fit=crop',
-              category: 'Gym & Fitness',
-              title: 'Gym Equipment',
-              count: '95 active listings',
-              href: '/category/gym',
-            },
-            {
-              image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop',
-              category: 'Shoes & Footwear',
-              title: 'Shoes & Sneakers',
-              count: '178 active listings',
-              href: '/category/shoes',
-            },
-          ]}
-        />
-        <FeaturedListings />
-        <RecentlyViewed />
-      </main>
-    </FavoritesProvider>
+      <Suspense fallback={<LoadingState label="Loading…" />}>
+      <AnimatePresence mode="wait" initial={false}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/"                  element={<HomePage />} />
+          <Route path="/category/:slug"    element={<CategoryPage />} />
+          <Route path="/listing/:id"       element={<ListingDetailPage />} />
+          <Route path="/add-listing"       element={<RequireAuth><AddListingPage /></RequireAuth>} />
+          <Route path="/edit-listing/:id"  element={<RequireAuth><EditListingPage /></RequireAuth>} />
+          <Route path="/login"             element={<LoginPage />} />
+          <Route path="/listings"          element={<AllListingsPage />} />
+          <Route path="/browse"            element={<AllListingsPage />} />
+          <Route path="/dashboard"         element={<RequireAuth><DashboardPage /></RequireAuth>} />
+          <Route path="/my-listings"       element={<RequireAuth><MyListingsPage /></RequireAuth>} />
+          <Route path="/saved-listings"    element={<RequireAuth><SavedListingsPage /></RequireAuth>} />
+          <Route path="/profile"           element={<RequireAuth><ProfilePage /></RequireAuth>} />
+          <Route path="/seller/:sellerName" element={<SellerProfilePage />} />
+          <Route path="/about"             element={<AboutPage />} />
+          <Route path="/contact"           element={<ContactPage />} />
+          <Route path="/admin"             element={<RequireAdmin><AdminPage /></RequireAdmin>} />
+          <Route path="*"                  element={<NotFoundPage />} />
+        </Routes>
+      </AnimatePresence>
+      </Suspense>
+      <Footer />
+    </>
   );
 }

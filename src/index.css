@@ -171,9 +171,12 @@ html {
 /* ─── Hero Tags (popular + recent searches) ─────────────── */
 .hero-tag-label {
   font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.65);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 3px rgba(7, 30, 17, 0.55);
   flex-shrink: 0;
 }
 

@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Env files (never commit secrets / local config)
+.env
+.env.*
+!.env.example
+
+# Stray vendored tool clone — not part of this codebase
+server/ruflo/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

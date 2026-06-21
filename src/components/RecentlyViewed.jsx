@@ -3,23 +3,16 @@ import { motion } from 'framer-motion';
 import ListingCard from './ListingCard';
 import ScrollReveal from './ScrollReveal';
 import { staggerContainer, staggerItem } from '../animations';
+import { getRecentlyViewed, clearRecentlyViewed } from '../services/recentlyViewedService';
 import './RecentlyViewed.css';
 
-const RECENTLY_VIEWED_KEY = 'malir-recently-viewed';
-
 export default function RecentlyViewed() {
-  const [items, setItems] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const [items, setItems] = useState(getRecentlyViewed);
 
   if (items.length === 0) return null;
 
   const handleClear = () => {
-    localStorage.removeItem(RECENTLY_VIEWED_KEY);
+    clearRecentlyViewed();
     setItems([]);
   };
 

@@ -1,8 +1,8 @@
-# Malir Cantt Marketplace
+# People of Malir Cantt Bazaar
 
 ## Project Vision
 
-Build a modern, premium, community-focused marketplace exclusively for Malir Cantt residents. The website should feel trustworthy, simple, and fast rather than cluttered like traditional classified websites.
+Build a modern, premium, community-focused bazaar exclusively for Malir Cantt residents. The website should feel trustworthy, simple, and fast rather than cluttered like traditional classified websites.
 
 ---
 
