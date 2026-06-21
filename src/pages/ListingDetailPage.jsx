@@ -182,6 +182,12 @@ export default function ListingDetailPage() {
   const seller = listing.seller;
   const isBusiness = seller.badgeType === 'business';
   const accountType = isBusiness ? 'Business' : 'Personal';
+  const BIZ_TYPE_LABELS = {
+    'food-beverage': 'Food & Beverage', 'home-decor': 'Home Decor', furniture: 'Furniture',
+    electronics: 'Electronics', automotive: 'Automotive', fashion: 'Fashion', fitness: 'Fitness',
+    services: 'Services', education: 'Education', beauty: 'Beauty', health: 'Health',
+    'real-estate': 'Real Estate', other: 'Other',
+  };
   const sellerArea = seller.area || listing.location;
   const whatsAppMessage = `Hi,\n\nI saw your listing for ${listing.title} on People of Malir Cantt Bazaar.\n\nIs this still available?`;
   const whatsAppUrl = `https://wa.me/${toWhatsAppNumber(seller.phone)}?text=${encodeURIComponent(whatsAppMessage)}`;
@@ -387,6 +393,9 @@ export default function ListingDetailPage() {
                       <span className={`detail__seller-type${isBusiness ? ' detail__seller-type--business' : ''}`}>
                         {accountType}
                       </span>
+                      {isBusiness && seller.businessType && (
+                        <span className="detail__seller-type">{BIZ_TYPE_LABELS[seller.businessType] || seller.businessType}</span>
+                      )}
                       {seller.isVerified && (
                         <VerifiedBadge type={seller.badgeType} size="md" />
                       )}

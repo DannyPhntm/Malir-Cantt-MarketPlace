@@ -33,10 +33,13 @@ function fileToAvatarDataUrl(file, max = 256, quality = 0.82) {
   });
 }
 
-const BUSINESS_CATEGORIES = [
-  'Vehicles', 'Technology', 'Property', 'Furniture',
-  'Jobs', 'Services', 'Gym & Fitness', 'Shoes & Footwear',
-];
+// Business type slug → display label (mirrors backend BUSINESS_TYPES).
+const BUSINESS_TYPE_LABELS = {
+  'food-beverage': 'Food & Beverage', 'home-decor': 'Home Decor', furniture: 'Furniture',
+  electronics: 'Electronics', automotive: 'Automotive', fashion: 'Fashion', fitness: 'Fitness',
+  services: 'Services', education: 'Education', beauty: 'Beauty', health: 'Health',
+  'real-estate': 'Real Estate', other: 'Other',
+};
 
 /* ── Icons ───────────────────────────────────────────────────────────────────── */
 
@@ -58,13 +61,6 @@ function CheckCircleIcon() {
   );
 }
 
-function ChevronIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="6 9 12 15 18 9"/>
-    </svg>
-  );
-}
 
 function CameraIcon() {
   return (
@@ -293,35 +289,6 @@ function Field({
   );
 }
 
-/* ── Select field ────────────────────────────────────────────────────────────── */
-
-function SelectField({ label, name, value, onChange, options, readOnly }) {
-  return (
-    <div className="prf-field">
-      <label className="prf-field__label" htmlFor={`prf-${name}`}>{label}</label>
-      {readOnly ? (
-        <div className="prf-field__input prf-field__input--readonly">
-          {value || <span className="prf-field__empty">—</span>}
-        </div>
-      ) : (
-        <div className="prf-field__select-wrap">
-          <select
-            id={`prf-${name}`}
-            className="prf-field__select"
-            name={name}
-            value={value || ''}
-            onChange={onChange}
-          >
-            <option value="">Select category</option>
-            {options.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-          <span className="prf-field__chevron"><ChevronIcon /></span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── Section card ────────────────────────────────────────────────────────────── */
 
 function SectionCard({ title, children, className = '' }) {
@@ -536,7 +503,15 @@ function PasswordChangeSection() {
 const BLANK_BUSINESS = { businessName: '', businessCategory: '', businessArea: '' };
 
 export default function ProfilePage() {
-  const { profile, updateProfile, userType, businessStatus } = useAuth();
+  const { profile, updateProfile, userType, businessStatus, sellerStatus, applyForBusinessSeller } = useAuth();
+  const [applyingSeller, setApplyingSeller] = useState(false);
+  const [applyError, setApplyError] = useState('');
+  const handleApplySeller = async () => {
+    setApplyingSeller(true); setApplyError('');
+    try { await applyForBusinessSeller(); }
+    catch (e) { setApplyError(e?.message || 'Could not submit your application.'); }
+    finally { setApplyingSeller(false); }
+  };
 
   const [isEditing, setIsEditing] = useState(false);
   const [saved,     setSaved]     = useState(false);
@@ -776,21 +751,35 @@ export default function ProfilePage() {
                 <div className="prf-fields-grid">
                   <Field
                     label="Business Name" name="businessName"
-                    value={form.businessName} onChange={handleChange}
+                    value={profile.businessName || ''} onChange={() => {}}
                     placeholder="Your business name"
-                    readOnly={ro} className="prf-field--full"
-                  />
-                  <SelectField
-                    label="Business Category" name="businessCategory"
-                    value={form.businessCategory} onChange={handleChange}
-                    options={BUSINESS_CATEGORIES} readOnly={ro}
+                    readOnly className="prf-field--full"
                   />
                   <Field
-                    label="Business Area" name="businessArea"
-                    value={form.businessArea} onChange={handleChange}
-                    placeholder="e.g. Malir Cantt"
-                    readOnly={ro}
+                    label="Business Type" name="businessType"
+                    value={BUSINESS_TYPE_LABELS[profile.businessType] || profile.businessType || '—'}
+                    onChange={() => {}} readOnly
                   />
+                </div>
+
+                {/* Business Seller status + apply CTA */}
+                <div className="prf-account-rows" style={{ marginTop: 'var(--space-4)' }}>
+                  <div className="prf-account-row">
+                    <span className="prf-account-label">Business Seller</span>
+                    <span className={`prf-account-value prf-biz-status prf-biz-status--${sellerStatus}`}>
+                      {sellerStatus === 'approved' ? 'Approved Seller'
+                        : sellerStatus === 'pending' ? 'Pending approval'
+                        : sellerStatus === 'rejected' ? 'Rejected' : 'Not applied'}
+                    </span>
+                  </div>
+                  {(sellerStatus === 'not_applied' || sellerStatus === 'rejected') && (
+                    <div className="prf-account-row">
+                      <button type="button" className="prf-save-btn" onClick={handleApplySeller} disabled={applyingSeller}>
+                        {applyingSeller ? 'Submitting…' : 'Apply for Business Seller'}
+                      </button>
+                    </div>
+                  )}
+                  {applyError && <p className="prf-field__error" role="alert">{applyError}</p>}
                 </div>
               </SectionCard>
             </motion.div>

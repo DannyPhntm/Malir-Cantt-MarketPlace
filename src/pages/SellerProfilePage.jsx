@@ -124,8 +124,16 @@ export default function SellerProfilePage() {
   const accountLabel = isBusiness ? 'Business Account' : 'Personal Account';
   const area         = seller.area || 'Malir Cantt';
   const joinDate     = seller.memberSince ? `Member since ${seller.memberSince}` : null;
-  // Derive business category from seller's first listing
-  const businessCategory = isBusiness ? sellerListings[0].category : null;
+  // Business type from the seller's account (falls back to first listing's category).
+  const BIZ_TYPE_LABELS = {
+    'food-beverage': 'Food & Beverage', 'home-decor': 'Home Decor', furniture: 'Furniture',
+    electronics: 'Electronics', automotive: 'Automotive', fashion: 'Fashion', fitness: 'Fitness',
+    services: 'Services', education: 'Education', beauty: 'Beauty', health: 'Health',
+    'real-estate': 'Real Estate', other: 'Other',
+  };
+  const businessCategory = isBusiness
+    ? (BIZ_TYPE_LABELS[seller.businessType] || seller.businessType || sellerListings[0]?.category || null)
+    : null;
 
   // Initials from first letter of each word (max 2)
   const initials = name.split(' ').map(w => w[0]?.toUpperCase() || '').join('').slice(0, 2);
