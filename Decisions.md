@@ -276,3 +276,25 @@ With no mail provider for outbound yet, contact-form messages are written to a `
 
 ### List keys must be stable identity, not display value
 The duplicate-stats bug came from keying the hero trust stats by `stat.value`. During load all four values are the same placeholder (`'—'`), so the keys collided and React mis-reconciled into duplicate nodes once real values arrived. The fix — key by the unique `stat.label` — is the general rule: React keys must identify *which item* this is, never the rendered value (which can repeat or change). Applies to any future list keyed off display data.
+
+---
+
+## 2026-06-21 — Phase 6: Category Restructure + Business Seller
+
+### Broad categories + a subcategory string, not a categories table
+Ten fixed top-level categories each carry a `subcategories[]` in config (`categoryConfig.js` / server `constants.js`); the listing stores a single `subcategory` slug string. No `categories` DB table and no arbitrary nesting — the taxonomy is small, fixed, and edited in code, so a join table would add migration/seed overhead for zero flexibility we need. One level of subcategory only (YAGNI). Slugs are the single source of truth shared FE↔BE; display labels derive from them.
+
+### Posting is gated per listing, not per category
+A resident must be free to sell one personal item in any broad category (e.g. a dining table under Home & Living), while a business selling commercially must be approved. So the gate lives on `listings.postingType` (`personal | business`), not on the category. `food`/`services` are the exception — inherently commercial, so they're *forced* to business. This replaces the old "category is business-only" rule, which couldn't express "personal item in a broad category."
+
+### Seller status + payment readiness are separate fields; "active" = approved AND settled
+`business_accounts` carries `sellerStatus` (approval) and `paymentStatus` (billing) as independent axes. A seller can post business listings only when `sellerStatus === 'approved'` AND `paymentStatus ∈ {paid, waived}`. This keeps a future paywall a one-line switch: today approval defaults payment to `waived` (beta, admin-controlled, no gateway); when billing turns on, new approvals default to `payment_required` and the same gate holds. The old `approved` boolean was dropped entirely (not mirrored) so there is one source of truth.
+
+### Featured cap enforced at activation, server-side
+Max 2 concurrent `featuredActive` listings per business, checked in the admin status endpoint when *newly* activating featured (409 over the cap). Enforcing at the write boundary — rather than trusting the UI or a periodic sweep — means the invariant can't be violated regardless of client.
+
+### Zero-data-loss migration: rebuild migration + idempotent backfill, run separately
+`prisma migrate dev` is interactive and refuses the `approved` column drop non-interactively, so the migration SQL was hand-written (SQLite table-rebuild pattern) and applied via `migrate deploy`. New columns are nullable/defaulted; the data remap (old→new slugs, postingType, seller/payment status) lives in a separate idempotent script (`scripts/migrate-data.js`) that never deletes and is safe to re-run (new slugs aren't in the old set). DB backed up before the backfill. Verified: row counts unchanged, no old slugs remain.
+
+### Real photography over AI for category tiles
+When AI image generation (Higgsfield) was unavailable, the fallback was curated real stock photos rather than blocking. For a trust-first local marketplace, recognisable real photography is on-brand and arguably the better default — AI tiles often read as synthetic. The image config is a swappable slug→URL map, so any source (local, stock, or AI later) drops in without code changes.

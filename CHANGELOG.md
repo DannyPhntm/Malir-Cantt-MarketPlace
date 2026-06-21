@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-06-21 — Phase 6: Category Restructure + Business Seller Monetization
+
+Scalable category taxonomy plus a Business Seller monetization model, shipped with a **zero-data-loss migration**. UI/architecture preserved (new data into existing components). Merged via PR #1. `npx eslint src` clean; `npm run build` green; backend smoke-tested per phase.
+
+### Added
+- **10 broad categories + subcategories** — Vehicles, Property, Electronics, Home & Living, Fashion, Services, Food, Jobs, Fitness, Other. Single source of truth in `server/src/lib/constants.js` + `src/data/categoryConfig.js` (each category carries a `subcategories[]`). New `listings.subcategory` column; searchable + filterable.
+- **Business Seller workflow** — `business_accounts.sellerStatus` (`not_applied → pending → approved/rejected`) + `paymentStatus` (`payment_required → payment_pending → paid → waived`). New `POST /api/business-accounts/apply`; admin decision endpoint sets status + payment. `businessVerified` flips only when **approved AND settled (paid|waived)**. No payment gateway — admin waives/marks paid for beta.
+- **Per-listing posting type** — `listings.postingType` (`personal | business`, default personal). Add Listing asks "personal or business?"; business posting requires an approved Business Seller (gate + "Apply for Business Seller" CTA; backend 403 otherwise). `food`/`services` are forced to business (`BUSINESS_ONLY_CATEGORIES`).
+- **`businessType`** — captured at business signup (13 options), displayed read-only on profile / seller / listing-detail; filterable in browse.
+- **Search/filter** — `AllListingsPage` Subcategory (category-dependent) + Business Type filters; free-text search includes subcategory; `GET /listings` accepts `subcategory` + `postingType`.
+- **Admin Business Seller queue** — approve / reject / waive payment / mark paid.
+
+### Changed
+- **Featured listings capped at 2 per business** — admin featured activation beyond the cap returns 409.
+- **Dropped `business_accounts.approved` boolean** — replaced by `sellerStatus` (all references updated: admin, stats, register, frontend AuthContext). Payment statuses replaced (`not_required/unpaid/paid` → `payment_required/payment_pending/paid/waived`).
+- Navbar dropdown, HomePage carousel cards, CategoryPage meta, Add/Edit Listing forms re-keyed to the 10 categories.
+- Listing reads expose the seller's `businessName/businessType/sellerStatus`.
+
+### Migration (zero data loss)
+- Hand-written SQLite rebuild migration (`20260620143705_category_and_seller`) applied via `migrate deploy` (column adds + `approved` drop), plus idempotent backfill (`server/scripts/migrate-data.js`). Old→new: technology→electronics, furniture→home-living/furniture, shoes→fashion/shoes, gym→fitness; postingType backfilled (food/services→business, else personal); existing approved businesses → approved/waived, others → pending. **14 listings / 4 business accounts preserved, 0 old slugs remaining, no rows deleted.**
+
+### Notes / deviations
+- Carousel tiles for fashion/services/food/fitness/other use curated **real Unsplash photography** (Higgsfield AI generation was unavailable — auth error); electronics/home-living reuse existing local photos. Image config is swappable later.
+- Design spec + phased plan committed under `docs/superpowers/`.
+
+---
+
 ## 2026-06-18 — Phase 5.9: Beta Launch Hardening
 
 Stability, polish, and production-readiness pass ahead of beta. **No new user-facing features**; existing functionality, layouts, and design language preserved. Frontend build passes; no new lint problems introduced.

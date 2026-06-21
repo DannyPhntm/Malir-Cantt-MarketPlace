@@ -2,35 +2,45 @@
 
 ---
 
+## Recently completed
+
+- **Phase 6 — Category Restructure + Business Seller Monetization** (merged 2026-06-21, PR #1):
+  10 broad categories + subcategories, per-listing personal/business posting gate,
+  Business Seller approval + payment-readiness workflow (admin-controlled, no gateway),
+  featured cap (2/business), subcategory + businessType search/filters, zero-data-loss
+  migration. See CHANGELOG.md (2026-06-21) and DECISIONS.md.
+- **Resend email migration** — verification/reset/email-change now send via Resend
+  (`server/src/lib/emailer.js`), replacing the Outlook SMTP/Nodemailer path.
+
 ## Next 3 Priorities (recommended)
 
-The backend is live end-to-end (DB, JWT auth + roles, listings CRUD + edit, admin
-moderation, saved listings, search/details, Food, public stats, contact —
-Phases 5.1 → 5.7). The next priorities target production-readiness and scale:
+The backend is live end-to-end (Phases 5.1 → 6). Next priorities target the
+remaining launch blockers and scale:
 
-1. **Image upload + hosting** — biggest production blocker
-   Listing images are stored as base64 data-URLs inside the DB (`listing_images.image_url`),
-   which bloats payloads/storage and won't scale. Add a real store (S3 / Supabase
-   Storage / Cloudinary) + an upload endpoint in front of `createListing`; the column
-   already holds a URL, so the read path doesn't change. (Add + Edit pages send base64.)
+1. **Verify a Resend sending domain (+ admin contact inbox)** — hard launch blocker
+   Email sends via Resend, but `MAIL_FROM=onboarding@resend.dev` is test mode: it only
+   delivers to the Resend account owner's address — **any other signup email fails**, so
+   real users can't verify. Verify a domain at resend.com/domains and set `MAIL_FROM` to
+   an address on it. While here, surface contact-form messages (admin inbox tab reading
+   `ContactMessage`). Unblocks real onboarding end-to-end.
 
-2. **Server-side search + pagination + views tracking**
-   The approved feed currently loads ALL listings and filters/searches client-side
-   (`ListingsContext` + `AllListingsPage`) — and `/stats/public` `categoryCounts` /
-   homepage sections also lean on the full feed. Move search/filter/sort/pagination to
-   the API via query params (the typed filters already map cleanly) and add a real
-   listing `views` counter (currently always 0). Required before the catalogue grows.
+2. **Image upload + hosting** — won't scale
+   Listing images (and now profile avatars) are base64 data-URLs in the DB
+   (`listing_images.image_url`, `users.avatar_url`), which bloats payloads/storage. Add a
+   real store (S3 / Supabase Storage / Cloudinary) + an upload endpoint in front of
+   `createListing`; the columns already hold URLs, so the read path doesn't change.
 
-3. **Production email delivery + contact inbox**
-   Two loops are stored-but-not-sent: verification/reset codes only print to the server
-   console without SMTP, and contact-form messages are persisted (`ContactMessage`) but
-   go nowhere. Wire real SMTP creds (`server/.env` `SMTP_*`), and surface contact
-   messages (an admin inbox tab reading `ContactMessage`, or a forwarding step). Closes
-   the email + contact systems end-to-end.
+3. **Server-side search + filter + pagination + views**
+   The approved feed loads ALL listings and filters/searches client-side
+   (`ListingsContext` + `AllListingsPage`), including the new subcategory/businessType/
+   postingType filters. The backend already accepts `category/subcategory/postingType`
+   query params — move search/sort/pagination to the API and add a real `views` counter
+   (currently always 0). Required before the catalogue grows.
 
    Runners-up: 401 auto-logout + refresh-token rotation; responsive pass
-   (375–1440px); WhatsApp on SellerProfilePage; remove the stray `server/ruflo/`
-   vendored clone (now gitignored).
+   (375–1440px); WhatsApp on SellerProfilePage; backfill `businessType` for pre-existing
+   business accounts (migrated rows are null); future Business Seller payment gateway
+   (status fields are already in place); remove the stray `server/ruflo/` vendored clone.
 
 ---
 
