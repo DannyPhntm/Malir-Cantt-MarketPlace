@@ -15,15 +15,16 @@ const NAV_LINKS = [
 ];
 
 const DROPDOWN_CATEGORIES = [
-  { slug: 'vehicles',   name: 'Vehicles' },
-  { slug: 'technology', name: 'Technology' },
-  { slug: 'property',   name: 'Property' },
-  { slug: 'furniture',  name: 'Furniture' },
-  { slug: 'jobs',       name: 'Jobs' },
-  { slug: 'services',   name: 'Services' },
-  { slug: 'gym',        name: 'Gym & Fitness' },
-  { slug: 'shoes',      name: 'Shoes & Footwear' },
-  { slug: 'food',       name: 'Food & Home Kitchen' },
+  { slug: 'vehicles',    name: 'Vehicles' },
+  { slug: 'property',    name: 'Property' },
+  { slug: 'electronics', name: 'Electronics' },
+  { slug: 'home-living', name: 'Home & Living' },
+  { slug: 'fashion',     name: 'Fashion' },
+  { slug: 'services',    name: 'Services' },
+  { slug: 'food',        name: 'Food' },
+  { slug: 'jobs',        name: 'Jobs' },
+  { slug: 'fitness',     name: 'Fitness' },
+  { slug: 'other',       name: 'Other' },
 ];
 
 // Account dropdown destinations (shown when signed in).

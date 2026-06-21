@@ -6,6 +6,7 @@ import ListingCard from '../components/ListingCard';
 import LoadingState from '../components/LoadingState';
 import PageTransition from '../components/PageTransition';
 import { staggerContainer, staggerItem } from '../animations';
+import { CATEGORY_CONFIG } from '../data/categoryConfig';
 import './CategoryPage.css';
 
 const SORT_OPTIONS = [
@@ -29,16 +30,20 @@ function parseTimeAgo(str = '') {
 }
 
 const CATEGORY_FILTERS = [
-  { value: '',           label: 'All Categories' },
-  { value: 'vehicles',   label: 'Vehicles' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'property',   label: 'Property' },
-  { value: 'furniture',  label: 'Furniture' },
-  { value: 'jobs',       label: 'Jobs' },
-  { value: 'services',   label: 'Services' },
-  { value: 'gym',        label: 'Gym & Fitness' },
-  { value: 'shoes',      label: 'Shoes & Footwear' },
-  { value: 'food',       label: 'Food & Home Kitchen' },
+  { value: '', label: 'All Categories' },
+  ...Object.entries(CATEGORY_CONFIG).map(([slug, cfg]) => ({ value: slug, label: cfg.label })),
+];
+
+// Business type filter options (mirrors backend BUSINESS_TYPES).
+const BUSINESS_TYPE_FILTERS = [
+  { value: '', label: 'Any Business Type' },
+  { value: 'food-beverage', label: 'Food & Beverage' }, { value: 'home-decor', label: 'Home Decor' },
+  { value: 'furniture', label: 'Furniture' }, { value: 'electronics', label: 'Electronics' },
+  { value: 'automotive', label: 'Automotive' }, { value: 'fashion', label: 'Fashion' },
+  { value: 'fitness', label: 'Fitness' }, { value: 'services', label: 'Services' },
+  { value: 'education', label: 'Education' }, { value: 'beauty', label: 'Beauty' },
+  { value: 'health', label: 'Health' }, { value: 'real-estate', label: 'Real Estate' },
+  { value: 'other', label: 'Other' },
 ];
 
 // Year list for the vehicle range filter (current year back to 1990).
@@ -115,6 +120,8 @@ export default function AllListingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [sort, setSort]                 = useState('newest');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [subcategoryFilter, setSubcategoryFilter] = useState('');
+  const [businessTypeFilter, setBusinessTypeFilter] = useState('');
   const [priceMin, setPriceMin]         = useState('');
   const [priceMax, setPriceMax]         = useState('');
   const [locationFilter, setLocationFilter] = useState('');
@@ -128,15 +135,21 @@ export default function AllListingsPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync the search box to the URL ?q= param
   useEffect(() => { setLocalQuery(urlQuery); }, [urlQuery]);
 
-  // Reset category-specific filters when category changes
+  // Reset category-specific filters (incl. subcategory) when category changes
   // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: clear filters when the selected category changes
-  useEffect(() => { setCatFilters({}); }, [categoryFilter]);
+  useEffect(() => { setCatFilters({}); setSubcategoryFilter(''); }, [categoryFilter]);
+
+  // Subcategory options for the selected category.
+  const subcategoryOptions = useMemo(
+    () => CATEGORY_CONFIG[categoryFilter]?.subcategories || [],
+    [categoryFilter],
+  );
 
   // Autofocus the search box when landing on the page (no scroll jump).
   useEffect(() => { searchInputRef.current?.focus({ preventScroll: true }); }, []);
 
   const catFilterFields = useMemo(() => CAT_FILTER_CONFIG[categoryFilter] || [], [categoryFilter]);
-  const activeFilterCount = [priceMin, priceMax, locationFilter, ...Object.values(catFilters)].filter(Boolean).length;
+  const activeFilterCount = [priceMin, priceMax, locationFilter, subcategoryFilter, businessTypeFilter, ...Object.values(catFilters)].filter(Boolean).length;
 
   // The detail value for a field key (details first, legacy direct prop fallback).
   const fieldValue = (listing, key) => listing.details?.[key] ?? listing[key];
@@ -151,7 +164,7 @@ export default function AllListingsPage() {
       const tokens = localQuery.trim().toLowerCase().split(/\s+/);
       list = list.filter(l => {
         const hay = [
-          l.title, l.description, l.category, l.seller?.name, l.location,
+          l.title, l.description, l.category, l.subcategoryLabel, l.seller?.name, l.location,
           ...Object.values(l.details || {}),
         ].join(' ').toLowerCase();
         return tokens.every(t => hay.includes(t));
@@ -160,6 +173,14 @@ export default function AllListingsPage() {
 
     if (categoryFilter) {
       list = list.filter(l => l.categorySlug === categoryFilter);
+    }
+
+    if (subcategoryFilter) {
+      list = list.filter(l => l.subcategory === subcategoryFilter);
+    }
+
+    if (businessTypeFilter) {
+      list = list.filter(l => l.seller?.businessType === businessTypeFilter);
     }
 
     const min = parseFloat(String(priceMin).replace(/,/g, ''));
@@ -197,7 +218,7 @@ export default function AllListingsPage() {
       if (sort === 'recently_added') return parseTimeAgo(a.timeAgo) - parseTimeAgo(b.timeAgo);
       return 0;
     });
-  }, [sort, categoryFilter, priceMin, priceMax, locationFilter, catFilters, localQuery, allListings, catFilterFields]);
+  }, [sort, categoryFilter, subcategoryFilter, businessTypeFilter, priceMin, priceMax, locationFilter, catFilters, localQuery, allListings, catFilterFields]);
 
   const hasQuery = localQuery.trim().length > 0;
   const heading  = hasQuery ? `Results for "${localQuery.trim()}"` : 'All Listings';
@@ -312,6 +333,17 @@ export default function AllListingsPage() {
               <div className="cat-toolbar__controls">
                 <SelectWrap id="all-cat-filter" label="Category" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
                   {CATEGORY_FILTERS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </SelectWrap>
+
+                {subcategoryOptions.length > 0 && (
+                  <SelectWrap id="all-subcat-filter" label="Subcategory" value={subcategoryFilter} onChange={e => setSubcategoryFilter(e.target.value)}>
+                    <option value="">All Subcategories</option>
+                    {subcategoryOptions.map(s => <option key={s.slug} value={s.slug}>{s.label}</option>)}
+                  </SelectWrap>
+                )}
+
+                <SelectWrap id="all-biztype-filter" label="Business Type" value={businessTypeFilter} onChange={e => setBusinessTypeFilter(e.target.value)}>
+                  {BUSINESS_TYPE_FILTERS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </SelectWrap>
 
                 <SelectWrap id="all-sort" label="Sort by" value={sort} onChange={e => setSort(e.target.value)}>

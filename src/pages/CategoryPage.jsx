@@ -9,15 +9,16 @@ import { staggerContainer, staggerItem } from '../animations';
 import './CategoryPage.css';
 
 const CATEGORY_META = {
-  vehicles:   { name: 'Vehicles',        description: 'Cars, bikes, and every vehicle in between' },
-  technology: { name: 'Technology',      description: 'Phones, laptops, gadgets, and more' },
-  property:   { name: 'Property',        description: 'Homes, apartments, plots, and rental listings' },
-  furniture:  { name: 'Furniture',       description: 'Home and living essentials' },
-  jobs:       { name: 'Jobs',            description: 'Local employment and freelance opportunities' },
-  services:   { name: 'Services',        description: 'Trusted local professionals near you' },
-  gym:        { name: 'Gym & Fitness',   description: 'Equipment, memberships, and fitness gear' },
-  shoes:      { name: 'Shoes & Footwear', description: 'Sneakers, sandals, formal, and more' },
-  food:       { name: 'Food & Home Kitchen', description: 'Home chefs, bakers, caterers, and meal prep' },
+  vehicles:      { name: 'Vehicles',      description: 'Cars, bikes, auto parts, and accessories' },
+  property:      { name: 'Property',      description: 'Houses, apartments, plots, and rentals' },
+  electronics:   { name: 'Electronics',   description: 'Phones, laptops, gaming, and appliances' },
+  'home-living': { name: 'Home & Living', description: 'Furniture, home decor, kitchen, garden, and household items' },
+  fashion:       { name: 'Fashion',       description: 'Shoes, clothing, and accessories' },
+  services:      { name: 'Services',      description: 'Tutors, repair, freelance, cleaning, and professionals' },
+  food:          { name: 'Food',          description: 'Home food, baking, catering, and meal prep' },
+  jobs:          { name: 'Jobs',          description: 'Full-time, part-time, and internship opportunities' },
+  fitness:       { name: 'Fitness',       description: 'Equipment, memberships, supplements, and activewear' },
+  other:         { name: 'Other',         description: 'Everything else on the marketplace' },
 };
 
 const SORT_OPTIONS = [

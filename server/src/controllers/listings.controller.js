@@ -22,6 +22,7 @@ const sellerSelect = {
   businessVerified: true,
   residentLocation: true,
   createdAt: true,
+  businessAccount: { select: { businessName: true, businessType: true, sellerStatus: true } },
 };
 
 /* GET /api/listings?category=&status=&userId=&featured=&featuredRequested= */

@@ -77,6 +77,9 @@ function adaptSeller(user) {
     isVerified: isBusiness ? !!user?.businessVerified : false,
     badgeType: isBusiness ? 'business' : 'resident',
     area: user?.residentLocation || 'Malir Cantt',
+    businessName: user?.businessAccount?.businessName || null,
+    businessType: user?.businessAccount?.businessType || null,
+    sellerStatus: user?.businessAccount?.sellerStatus || null,
   };
 }
 
