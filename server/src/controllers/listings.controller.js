@@ -6,6 +6,7 @@ import {
   IMAGE_OPTIONAL_CATEGORIES,
   MIN_IMAGES,
   MAX_IMAGES,
+  MAX_FEATURED_PER_BUSINESS,
 } from '../lib/constants.js';
 
 const withImages = { images: { orderBy: { displayOrder: 'asc' } } };
@@ -25,9 +26,11 @@ const sellerSelect = {
 
 /* GET /api/listings?category=&status=&userId=&featured=&featuredRequested= */
 export const listListings = asyncHandler(async (req, res) => {
-  const { category, status, userId, featured, featuredRequested } = req.query;
+  const { category, subcategory, postingType, status, userId, featured, featuredRequested } = req.query;
   const where = {};
   if (category) where.category = category;
+  if (subcategory) where.subcategory = subcategory;
+  if (postingType) where.postingType = postingType;
   if (status) where.status = status;
   if (userId) where.userId = userId;
   if (featured !== undefined) where.featuredActive = featured;
@@ -78,13 +81,20 @@ export const getListing = asyncHandler(async (req, res) => {
 export const createListing = asyncHandler(async (req, res) => {
   // Owner comes from the authenticated token, never the request body.
   const userId = req.user.id;
-  const { title, description, category, price, featuredRequested, details, images } = req.body;
+  const { title, description, category, subcategory, price, featuredRequested, details, images } = req.body;
 
-  // Business-only categories (e.g. Food) require a verified business account.
-  if (BUSINESS_ONLY_CATEGORIES.includes(category)) {
-    const owner = await prisma.user.findUnique({ where: { id: userId } });
-    if (!owner?.businessVerified) {
-      throw new ApiError(403, 'This category is reserved for verified business accounts.');
+  // Posting type: commercial categories (food/services) are always business;
+  // otherwise the seller's choice (default personal).
+  const forcedBusiness = BUSINESS_ONLY_CATEGORIES.includes(category);
+  const postingType = forcedBusiness ? 'business' : (req.body.postingType || 'personal');
+
+  // Business listings require an active Business Seller (approved + settled).
+  if (postingType === 'business') {
+    const account = await prisma.businessAccount.findUnique({ where: { userId } });
+    const settled = account && (account.paymentStatus === 'paid' || account.paymentStatus === 'waived');
+    const active = account && account.sellerStatus === 'approved' && settled;
+    if (!active) {
+      throw new ApiError(403, 'Business selling requires an approved Business Seller account. Apply for Business Seller status to post commercial listings.');
     }
   }
 
@@ -99,6 +109,8 @@ export const createListing = asyncHandler(async (req, res) => {
       title,
       description,
       category,
+      subcategory: subcategory || null,
+      postingType,
       price,
       featuredRequested,
       featuredActive: false,
@@ -189,6 +201,22 @@ export const setListingStatus = asyncHandler(async (req, res) => {
   if (status !== undefined) data.status = status;
   if (featuredActive !== undefined) data.featuredActive = featuredActive;
   if (featuredRequested !== undefined) data.featuredRequested = featuredRequested;
+
+  // Featured cap: a business may have at most MAX_FEATURED_PER_BUSINESS active
+  // featured listings at once. Only check when newly activating featured.
+  if (featuredActive === true) {
+    const target = await prisma.listing.findUnique({
+      where: { id }, select: { userId: true, featuredActive: true },
+    });
+    if (target && !target.featuredActive) {
+      const count = await prisma.listing.count({
+        where: { userId: target.userId, featuredActive: true },
+      });
+      if (count >= MAX_FEATURED_PER_BUSINESS) {
+        throw new ApiError(409, `This business already has ${MAX_FEATURED_PER_BUSINESS} featured listings. Unfeature one first.`);
+      }
+    }
+  }
 
   const listing = await prisma.listing.update({ where: { id }, data, include: withImages });
   res.json({ listing });
