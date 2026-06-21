@@ -18,9 +18,22 @@ const STEP_VARIANTS = {
   exit:    { opacity: 0, y: -4, transition: { duration: 0.12 } },
 };
 
-const BUSINESS_CATEGORIES = [
-  'Vehicles', 'Technology', 'Property', 'Furniture',
-  'Jobs', 'Services', 'Gym & Fitness', 'Shoes & Footwear',
+// Business types (what kind of business they operate) — value is the backend
+// slug, label is shown. Mirrors BUSINESS_TYPES in the server constants.
+const BUSINESS_TYPE_OPTIONS = [
+  { value: 'food-beverage', label: 'Food & Beverage' },
+  { value: 'home-decor',    label: 'Home Decor' },
+  { value: 'furniture',     label: 'Furniture' },
+  { value: 'electronics',   label: 'Electronics' },
+  { value: 'automotive',    label: 'Automotive' },
+  { value: 'fashion',       label: 'Fashion' },
+  { value: 'fitness',       label: 'Fitness' },
+  { value: 'services',      label: 'Services' },
+  { value: 'education',     label: 'Education' },
+  { value: 'beauty',        label: 'Beauty' },
+  { value: 'health',        label: 'Health' },
+  { value: 'real-estate',   label: 'Real Estate' },
+  { value: 'other',         label: 'Other' },
 ];
 
 const MAX_VERIFY_ATTEMPTS = 5;
@@ -746,7 +759,7 @@ function BusinessForm({ onBack }) {
     else if (form.password.length < 8)   errs.password        = 'Password must be at least 8 characters.';
     if (!form.confirmPassword)           errs.confirmPassword = 'Please confirm your password.';
     else if (form.password !== form.confirmPassword) errs.confirmPassword = 'Passwords do not match.';
-    if (!form.category)                  errs.category        = 'Business category is required.';
+    if (!form.category)                  errs.category        = 'Business type is required.';
     if (!form.area.trim())               errs.area            = 'Business area is required.';
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
@@ -760,6 +773,7 @@ function BusinessForm({ onBack }) {
         accountType: 'business',
         residentLocation: form.area,
         businessName: form.businessName,
+        businessType: form.category || undefined,
       });      setSending(false);
       setVerifyNotice('');
       setStage('verify');
@@ -869,7 +883,7 @@ function BusinessForm({ onBack }) {
             <div className="login-form-row">
               <div className="form-group">
                 <label htmlFor="b-category" className="form-label">
-                  Business Category <span className="form-required">*</span>
+                  Business Type <span className="form-required">*</span>
                 </label>
                 <div className="form-select-wrap">
                   <select
@@ -878,8 +892,8 @@ function BusinessForm({ onBack }) {
                     className={`form-select${errors.category ? ' form-select--error' : ''}`}
                   >
                     <option value="" disabled>Select…</option>
-                    {BUSINESS_CATEGORIES.map(c => (
-                      <option key={c} value={c}>{c}</option>
+                    {BUSINESS_TYPE_OPTIONS.map(t => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
                   </select>
                   <ChevronIcon />

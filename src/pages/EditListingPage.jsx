@@ -11,11 +11,9 @@ import listingsApi from '../services/listingsApi';
 import './AddListingPage.css';
 import './EditListingPage.css';
 
-const CATEGORY_LABEL = {
-  vehicles: 'Vehicles', technology: 'Technology', property: 'Property',
-  furniture: 'Furniture', jobs: 'Jobs', services: 'Services',
-  gym: 'Gym & Fitness', shoes: 'Shoes & Footwear', food: 'Food & Home Kitchen',
-};
+const CATEGORY_LABEL = Object.fromEntries(
+  Object.entries(CATEGORY_CONFIG).map(([slug, cfg]) => [slug, cfg.label]),
+);
 
 // Compress a picked file to a base64 JPEG (same approach as AddListingPage).
 function compressImage(file, maxDim = 1200, quality = 0.82) {
@@ -47,7 +45,7 @@ export default function EditListingPage() {
 
   const [phase, setPhase] = useState('loading'); // loading | unauthorized | notfound | ready | saved
   const [original, setOriginal] = useState(null);
-  const [form, setForm] = useState({ title: '', price: '', description: '' });
+  const [form, setForm] = useState({ title: '', price: '', description: '', subcategory: '' });
   const [categoryFields, setCategoryFields] = useState({});
   const [images, setImages] = useState([]); // array of url/base64 strings, in display order
   const [errors, setErrors] = useState({});
@@ -66,7 +64,7 @@ export default function EditListingPage() {
         const isOwner = user && (l.userId === user.id || user.role === 'admin');
         if (!isOwner) { setPhase('unauthorized'); return; }
         setOriginal(l);
-        setForm({ title: l.title || '', price: String(l.priceRaw || ''), description: l.description || '' });
+        setForm({ title: l.title || '', price: String(l.priceRaw || ''), description: l.description || '', subcategory: l.subcategory || '' });
         setCategoryFields({ ...(l.details || {}) });
         setImages([...(l.images || [])].filter(Boolean));
         setPhase('ready');
@@ -150,6 +148,7 @@ export default function EditListingPage() {
         title: form.title.trim(),
         description: form.description.trim(),
         price: Number(String(form.price).replace(/[^0-9]/g, '')),
+        subcategory: form.subcategory || null,
         details: categoryFields,
         images: images.map((url, i) => ({ imageUrl: url, displayOrder: i })),
       };
@@ -260,6 +259,27 @@ export default function EditListingPage() {
                     <span className="edit-listing__category-lock-note">Category can't be changed after posting</span>
                   </div>
                 </div>
+
+                {catConfig?.subcategories?.length > 0 && (
+                  <div className="form-group">
+                    <label htmlFor="subcategory" className="form-label">Subcategory</label>
+                    <div className="form-select-wrap">
+                      <select
+                        id="subcategory" name="subcategory"
+                        value={form.subcategory} onChange={handleChange}
+                        className="form-select"
+                      >
+                        <option value="">Any / Not specified</option>
+                        {catConfig.subcategories.map(s => (
+                          <option key={s.slug} value={s.slug}>{s.label}</option>
+                        ))}
+                      </select>
+                      <svg className="form-select-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                        <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Photos */}
