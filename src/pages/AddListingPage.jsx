@@ -11,22 +11,17 @@ import FeaturedListingOption from '../components/FeaturedListingOption';
 import PageTransition from '../components/PageTransition';
 import './AddListingPage.css';
 
+// Category options derived from the taxonomy single source (no drift).
 const CATEGORIES = [
-  { value: '',           label: 'Select a category' },
-  { value: 'vehicles',   label: 'Vehicles' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'property',   label: 'Property' },
-  { value: 'furniture',  label: 'Furniture' },
-  { value: 'jobs',       label: 'Jobs' },
-  { value: 'services',   label: 'Services' },
-  { value: 'gym',        label: 'Gym & Fitness' },
-  { value: 'shoes',      label: 'Shoes & Footwear' },
-  { value: 'food',       label: 'Food & Home Kitchen' },
+  { value: '', label: 'Select a category' },
+  ...Object.entries(CATEGORY_CONFIG).map(([slug, cfg]) => ({ value: slug, label: cfg.label })),
 ];
 
 const INITIAL_FORM = {
   title: '',
   category: '',
+  subcategory: '',
+  postingType: 'personal',
   price: '',
   description: '',
   name: '',
@@ -78,7 +73,7 @@ function compressImage(file, maxDim = 1200, quality = 0.82) {
 
 export default function AddListingPage() {
   const { addListing } = useListings();
-  const { profile, isApprovedBusiness } = useAuth();
+  const { profile, userType, isApprovedSeller, applyForBusinessSeller } = useAuth();
 
   // Restore any saved draft (captured once on mount).
   const draftRef = useRef(loadDraft());
@@ -91,6 +86,7 @@ export default function AddListingPage() {
     ...(draftRef.current?.form || {}),
   }));
   const [showServicesModal, setShowServicesModal] = useState(false);
+  const [applyingSeller, setApplyingSeller] = useState(false);
   const [listingTier, setListingTier] = useState(() => draftRef.current?.listingTier || LISTING_TIER.STANDARD);
   const [categoryFields, setCategoryFields] = useState(() => draftRef.current?.categoryFields || {});
   const [submitted, setSubmitted] = useState(null); // created listing after success
@@ -133,14 +129,37 @@ export default function AddListingPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Business-only categories (Services, Food) require an APPROVED business account.
-    if (name === 'category' && CATEGORY_CONFIG[value]?.businessOnly && !isApprovedBusiness) {
-      setForm(prev => ({ ...prev, category: value }));
-      setShowServicesModal(true);
+    if (name === 'category') {
+      // Commercial categories (Food, Services) are always business listings;
+      // changing category resets the subcategory.
+      const commercial = !!CATEGORY_CONFIG[value]?.businessOnly;
+      setForm(prev => ({
+        ...prev,
+        category: value,
+        subcategory: '',
+        postingType: commercial ? 'business' : prev.postingType,
+      }));
+      if (errors.category) setErrors(prev => ({ ...prev, category: '' }));
       return;
     }
     setForm(prev => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  // True when the chosen posting requires an approved seller the user lacks.
+  const needsSeller = form.postingType === 'business' && !isApprovedSeller;
+
+  // Business account applies for seller status from the gate modal.
+  const handleApplySeller = async () => {
+    setApplyingSeller(true);
+    try {
+      await applyForBusinessSeller();
+      setShowServicesModal(false);
+    } catch {
+      /* keep the modal open; the apply call surfaced its own error path */
+    } finally {
+      setApplyingSeller(false);
+    }
   };
 
   const handleCategoryFieldChange = (e) => {
@@ -190,6 +209,14 @@ export default function AddListingPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Business listings require an approved Business Seller — surface the gate
+    // instead of letting the backend reject it with a 403.
+    if (needsSeller) {
+      setShowServicesModal(true);
+      return;
+    }
+
     const { errs, cErrs } = validate();
 
     if (Object.keys(errs).length > 0 || Object.keys(cErrs).length > 0) {
@@ -222,6 +249,8 @@ export default function AddListingPage() {
         priceRaw:     priceNum,
         category:     categoryLabel,
         categorySlug: form.category,
+        subcategory:  form.subcategory || null,
+        postingType:  form.postingType,
         location:     form.location || 'Malir Cantt',
         condition:    categoryFields.condition || '',
         description:  form.description.trim(),
@@ -353,6 +382,63 @@ export default function AddListingPage() {
                       <p className="form-helper catfields__prompt">Select a category to continue.</p>
                     )}
                   </div>
+
+                  {/* Subcategory — shown once a category with subcategories is picked */}
+                  {form.category && catConfig?.subcategories?.length > 0 && (
+                    <div className="form-group">
+                      <label htmlFor="subcategory" className="form-label">Subcategory</label>
+                      <div className="form-select-wrap">
+                        <select
+                          id="subcategory"
+                          name="subcategory"
+                          value={form.subcategory}
+                          onChange={handleChange}
+                          className="form-select form-select--lg"
+                        >
+                          <option value="">Any / Not specified</option>
+                          {catConfig.subcategories.map(s => (
+                            <option key={s.slug} value={s.slug}>{s.label}</option>
+                          ))}
+                        </select>
+                        <svg className="form-select-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                          <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Posting type — personal vs business (commercial categories lock to business) */}
+                  {form.category && (
+                    <div className="form-group">
+                      <label className="form-label">Posting as</label>
+                      {catConfig?.businessOnly ? (
+                        <p className="form-helper">
+                          This is a commercial category — your listing will be posted as a <strong>business listing</strong> and requires an approved Business Seller account.
+                        </p>
+                      ) : (
+                        <div className="form-posting-type">
+                          <label className="form-posting-type__opt">
+                            <input type="radio" name="postingType" value="personal"
+                              checked={form.postingType === 'personal'} onChange={handleChange} />
+                            <span>Personal listing</span>
+                          </label>
+                          <label className="form-posting-type__opt">
+                            <input type="radio" name="postingType" value="business"
+                              checked={form.postingType === 'business'} onChange={handleChange} />
+                            <span>Business listing</span>
+                          </label>
+                        </div>
+                      )}
+                      {needsSeller && (
+                        <p className="form-error" role="alert">
+                          Business selling requires an approved Business Seller account.{' '}
+                          <button type="button" className="form-inline-link" onClick={() => setShowServicesModal(true)}>
+                            Apply for Business Seller
+                          </button>
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* ── Remaining cards — revealed after category is selected ── */}
@@ -668,13 +754,24 @@ export default function AddListingPage() {
 
       </main>
 
-      {/* Business account required modal */}
+      {/* Business Seller gate modal */}
       <AnimatePresence>
         {showServicesModal && (
           <BusinessRequiredModal
+            title="Business Seller required"
+            message="Business selling requires an approved Business Seller account. Apply for Business Seller status to post commercial listings."
+            primaryLabel={userType === 'business' ? 'Apply for Business Seller' : 'Register a Business Account'}
+            primaryBusy={applyingSeller}
+            onPrimary={userType === 'business' ? handleApplySeller : undefined}
+            secondaryLabel="Back"
             onDismiss={() => {
               setShowServicesModal(false);
-              setForm(prev => ({ ...prev, category: '' }));
+              // Commercial categories can't be posted personally — clear the
+              // category; otherwise just revert to a personal listing.
+              setForm(prev =>
+                CATEGORY_CONFIG[prev.category]?.businessOnly
+                  ? { ...prev, category: '' }
+                  : { ...prev, postingType: 'personal' });
             }}
           />
         )}

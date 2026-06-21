@@ -13,8 +13,17 @@ function BuildingIcon() {
   );
 }
 
-export default function BusinessRequiredModal({ onDismiss }) {
+export default function BusinessRequiredModal({
+  onDismiss,
+  title = 'Business Account Required',
+  message = 'This category is reserved for verified business accounts. Apply for Business verification to access this category.',
+  primaryLabel = 'Apply for Business Account',
+  onPrimary,
+  primaryBusy = false,
+  secondaryLabel = 'Choose Another Category',
+}) {
   const navigate = useNavigate();
+  const handlePrimary = onPrimary || (() => navigate('/login?register=business'));
 
   // Lock body scroll and handle Escape
   useEffect(() => {
@@ -63,10 +72,10 @@ export default function BusinessRequiredModal({ onDismiss }) {
         {/* Body */}
         <div className="biz-modal__body">
           <h2 id="biz-modal-title" className="biz-modal__title">
-            Business Account Required
+            {title}
           </h2>
           <p className="biz-modal__message">
-            This category is reserved for verified business accounts. Apply for Business verification to access this category.
+            {message}
           </p>
         </div>
 
@@ -74,15 +83,16 @@ export default function BusinessRequiredModal({ onDismiss }) {
         <div className="biz-modal__actions">
           <button
             className="biz-modal__btn biz-modal__btn--primary"
-            onClick={() => navigate('/login?register=business')}
+            onClick={handlePrimary}
+            disabled={primaryBusy}
           >
-            Apply for Business Account
+            {primaryBusy ? 'Submitting…' : primaryLabel}
           </button>
           <button
             className="biz-modal__btn biz-modal__btn--ghost"
             onClick={onDismiss}
           >
-            Choose Another Category
+            {secondaryLabel}
           </button>
         </div>
       </motion.div>

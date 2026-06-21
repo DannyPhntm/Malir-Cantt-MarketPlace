@@ -52,6 +52,8 @@ export function ListingsProvider({ children }) {
         title: data.title,
         description: data.description,
         category: data.categorySlug,
+        subcategory: data.subcategory || null,
+        postingType: data.postingType || 'personal',
         price: data.priceRaw,
         featuredRequested: !!data.featuredRequested,
         details: data.details || {},
