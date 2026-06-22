@@ -14,11 +14,11 @@ const CATEGORY_CARDS = [
   { slug: 'electronics', category: 'Electronics',   title: 'Phones & Gadgets',    image: '/categories/electronics.png', href: '/category/electronics' },
   { slug: 'home-living', category: 'Home & Living', title: 'Furniture & Decor',   image: '/categories/home-living.png', href: '/category/home-living' },
   { slug: 'fashion',     category: 'Fashion',       title: 'Clothing & Shoes',    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop',  href: '/category/fashion' },
-  { slug: 'services',    category: 'Services',      title: 'Local Services',      image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=300&fit=crop',  href: '/category/services' },
+  { slug: 'services',    category: 'Services',      title: 'Local Services',      image: '/categories/services.png',    href: '/category/services' },
   { slug: 'food',        category: 'Food',          title: 'Homemade & Local',    image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=300&fit=crop',  href: '/category/food' },
   { slug: 'jobs',        category: 'Jobs',          title: 'Local Opportunities', image: '/categories/jobs.png',        href: '/category/jobs' },
   { slug: 'fitness',     category: 'Fitness',       title: 'Gym & Fitness',       image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=300&fit=crop',  href: '/category/fitness' },
-  { slug: 'other',       category: 'Other',         title: 'Everything Else',     image: 'https://images.unsplash.com/photo-1607082349566-187342175e2f?w=400&h=300&fit=crop',  href: '/category/other' },
+  { slug: 'other',       category: 'Other',         title: 'Everything Else',     image: '/categories/other.png',       href: '/category/other' },
 ];
 
 const ListIcon = () => (
