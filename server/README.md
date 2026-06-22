@@ -104,9 +104,10 @@ conflicts → `409`; missing records → `404`.
 ## Notes for future integration
 
 - **Auth**: JWT issued on login/verify-email (`src/lib/jwt.js`), verified by
-  `requireAuth` / `requireRole` middleware (`src/middleware/auth.js`). `JWT_SECRET`
-  + `JWT_EXPIRES_IN` in `.env` — set a strong secret in production. (No refresh
-  tokens / rotation yet.)
+  `requireAuth` / `requireRole` middleware (`src/middleware/auth.js`). **`JWT_SECRET`
+  is required** — in production (`NODE_ENV=production`) the server refuses to start
+  if it is unset (no insecure default); in development it warns and uses a fallback.
+  `JWT_EXPIRES_IN` defaults to `7d`. (No refresh tokens / rotation yet.)
 - **Email**: verification, password-reset, and email-change codes are generated
   and stored, then delivered via **Resend** (`src/lib/emailer.js`). Set
   `RESEND_API_KEY` + `MAIL_FROM` in `.env` to send real email. With no API key
