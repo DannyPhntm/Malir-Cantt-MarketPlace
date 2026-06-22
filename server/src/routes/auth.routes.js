@@ -13,16 +13,19 @@ import {
 } from '../validators/schemas.js';
 import * as auth from '../controllers/auth.controller.js';
 import { requireAuth } from '../middleware/auth.js';
+import { authLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
-router.post('/register', validate(registerSchema), auth.register);
-router.post('/verify-email', validate(verifyEmailSchema), auth.verifyEmail);
-router.post('/resend-verification', validate(resendVerificationSchema), auth.resendVerification);
-router.post('/login', validate(loginSchema), auth.login);
+// Strict per-IP rate limit on credential + email-sending endpoints (brute force,
+// credential stuffing, email bombing).
+router.post('/register', authLimiter, validate(registerSchema), auth.register);
+router.post('/verify-email', authLimiter, validate(verifyEmailSchema), auth.verifyEmail);
+router.post('/resend-verification', authLimiter, validate(resendVerificationSchema), auth.resendVerification);
+router.post('/login', authLimiter, validate(loginSchema), auth.login);
 router.get('/me', requireAuth, auth.me);
-router.post('/request-password-reset', validate(requestResetSchema), auth.requestPasswordReset);
-router.post('/reset-password', validate(resetPasswordSchema), auth.resetPassword);
+router.post('/request-password-reset', authLimiter, validate(requestResetSchema), auth.requestPasswordReset);
+router.post('/reset-password', authLimiter, validate(resetPasswordSchema), auth.resetPassword);
 router.post(
   '/change-password',
   requireAuth,
