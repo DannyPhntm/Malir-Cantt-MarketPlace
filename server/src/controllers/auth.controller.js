@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../lib/prisma.js';
 import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
 import { generateCode, codeExpiry, isExpired } from '../lib/codes.js';
+import { MAX_CODE_ATTEMPTS } from '../lib/constants.js';
 import { signToken } from '../lib/jwt.js';
 import {
   sendVerificationEmail,
@@ -71,6 +72,8 @@ export const register = asyncHandler(async (req, res) => {
       },
       include: { businessAccount: true },
     });
+    // Clear any orphan codes for this address before issuing a fresh one.
+    await tx.emailVerificationCode.deleteMany({ where: { email } });
     await tx.emailVerificationCode.create({
       data: { email, code, expiresAt: codeExpiry() },
     });
@@ -95,12 +98,21 @@ export const register = asyncHandler(async (req, res) => {
 export const verifyEmail = asyncHandler(async (req, res) => {
   const { email, code } = req.body;
 
+  // Find the latest active code for this email (looked up by email, NOT by the
+  // submitted code, so wrong guesses are counted against it — brute-force guard).
   const record = await prisma.emailVerificationCode.findFirst({
-    where: { email, code, verified: false },
+    where: { email, verified: false },
     orderBy: { createdAt: 'desc' },
   });
-  if (!record) throw new ApiError(400, 'Invalid verification code.');
-  if (isExpired(record.expiresAt)) throw new ApiError(400, 'Verification code has expired.');
+  if (!record) throw new ApiError(400, 'No active verification code. Please request a new one.');
+  if (isExpired(record.expiresAt)) throw new ApiError(400, 'Verification code has expired. Please request a new one.');
+  if (record.attempts >= MAX_CODE_ATTEMPTS) {
+    throw new ApiError(429, 'Too many incorrect attempts. Please request a new code.');
+  }
+  if (record.code !== code) {
+    await prisma.emailVerificationCode.update({ where: { id: record.id }, data: { attempts: { increment: 1 } } });
+    throw new ApiError(400, 'Invalid verification code.');
+  }
 
   await prisma.$transaction([
     prisma.emailVerificationCode.update({ where: { id: record.id }, data: { verified: true } }),
@@ -130,6 +142,8 @@ export const resendVerification = asyncHandler(async (req, res) => {
   if (!user) throw new ApiError(404, 'No account found for that email.');
   if (user.emailVerified) throw new ApiError(400, 'Email is already verified.');
 
+  // Invalidate any prior codes (and their attempt counters) — only the newest is valid.
+  await prisma.emailVerificationCode.deleteMany({ where: { email } });
   const code = generateCode();
   await prisma.emailVerificationCode.create({ data: { email, code, expiresAt: codeExpiry() } });
   await sendVerificationEmail({ to: email, code, name: user.name });
@@ -158,6 +172,8 @@ export const requestPasswordReset = asyncHandler(async (req, res) => {
   // Always respond 200 to avoid leaking which emails exist.
   if (!user) return res.json({ requested: true });
 
+  // Invalidate prior reset codes (+ attempts) — only the newest is valid.
+  await prisma.passwordResetCode.deleteMany({ where: { email } });
   const code = generateCode();
   await prisma.passwordResetCode.create({ data: { email, code, expiresAt: codeExpiry() } });
   await sendPasswordResetEmail({ to: email, code });
@@ -170,11 +186,18 @@ export const resetPassword = asyncHandler(async (req, res) => {
   const { email, code, password } = req.body;
 
   const record = await prisma.passwordResetCode.findFirst({
-    where: { email, code, used: false },
+    where: { email, used: false },
     orderBy: { createdAt: 'desc' },
   });
-  if (!record) throw new ApiError(400, 'Invalid reset code.');
-  if (isExpired(record.expiresAt)) throw new ApiError(400, 'Reset code has expired.');
+  if (!record) throw new ApiError(400, 'No active reset code. Please request a new one.');
+  if (isExpired(record.expiresAt)) throw new ApiError(400, 'Reset code has expired. Please request a new one.');
+  if (record.attempts >= MAX_CODE_ATTEMPTS) {
+    throw new ApiError(429, 'Too many incorrect attempts. Please request a new reset code.');
+  }
+  if (record.code !== code) {
+    await prisma.passwordResetCode.update({ where: { id: record.id }, data: { attempts: { increment: 1 } } });
+    throw new ApiError(400, 'Invalid reset code.');
+  }
 
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.$transaction([
@@ -218,6 +241,8 @@ export const requestEmailChange = asyncHandler(async (req, res) => {
   const taken = await prisma.user.findUnique({ where: { email: newEmail } });
   if (taken) throw new ApiError(409, 'An account with that email already exists.');
 
+  // Invalidate prior codes for the target address (+ attempts).
+  await prisma.emailVerificationCode.deleteMany({ where: { email: newEmail } });
   const code = generateCode();
   // The code is keyed to the NEW email so confirmation proves control of it.
   await prisma.emailVerificationCode.create({
@@ -240,11 +265,18 @@ export const confirmEmailChange = asyncHandler(async (req, res) => {
   if (taken) throw new ApiError(409, 'An account with that email already exists.');
 
   const record = await prisma.emailVerificationCode.findFirst({
-    where: { email: newEmail, code, verified: false },
+    where: { email: newEmail, verified: false },
     orderBy: { createdAt: 'desc' },
   });
-  if (!record) throw new ApiError(400, 'Invalid verification code.');
-  if (isExpired(record.expiresAt)) throw new ApiError(400, 'Verification code has expired.');
+  if (!record) throw new ApiError(400, 'No active verification code. Please request a new one.');
+  if (isExpired(record.expiresAt)) throw new ApiError(400, 'Verification code has expired. Please request a new one.');
+  if (record.attempts >= MAX_CODE_ATTEMPTS) {
+    throw new ApiError(429, 'Too many incorrect attempts. Please request a new code.');
+  }
+  if (record.code !== code) {
+    await prisma.emailVerificationCode.update({ where: { id: record.id }, data: { attempts: { increment: 1 } } });
+    throw new ApiError(400, 'Invalid verification code.');
+  }
 
   await prisma.$transaction([
     prisma.emailVerificationCode.update({ where: { id: record.id }, data: { verified: true } }),

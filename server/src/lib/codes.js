@@ -1,8 +1,10 @@
+import crypto from 'node:crypto';
 import { CODE_TTL_MINUTES } from './constants.js';
 
-// 6-digit numeric code (matches the frontend mock verification UI).
+// Cryptographically-secure 6-digit numeric code (100000–999999). Uses
+// crypto.randomInt (not Math.random) so codes aren't predictable.
 export function generateCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
 export function codeExpiry(minutes = CODE_TTL_MINUTES) {

@@ -54,3 +54,6 @@ export const OWNER_SETTABLE_STATUSES = ['approved', 'sold', 'hidden'];
 export const PAYMENT_STATUSES = ['payment_required', 'payment_pending', 'paid', 'waived'];
 
 export const CODE_TTL_MINUTES = Number(process.env.CODE_TTL_MINUTES) || 10;
+
+// Max failed verify/reset attempts per code before it's rejected (request a new one).
+export const MAX_CODE_ATTEMPTS = 5;
