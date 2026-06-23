@@ -8,8 +8,14 @@ wired to this yet** — Phase 5.1 is the data layer + API surface only.
 
 - **Express** — HTTP API (`/api`)
 - **Prisma ORM** — schema, migrations, type-safe queries
-- **SQLite** for local dev (`dev.db`) — switch to Postgres by changing the
-  `provider` in `prisma/schema.prisma` and `DATABASE_URL` in `.env`
+- **Neon Postgres** is the canonical database (`provider = "postgresql"`).
+  Set **`DATABASE_URL`** (pooled, host has `-pooler`) + **`DIRECT_URL`** (direct, for
+  migrations) in `.env` from the Neon dashboard (`?sslmode=require`). Apply with
+  **`prisma migrate deploy`** (production) and `npm run seed` for beta data.
+  The old SQLite setup is kept as a fallback — archived migrations in
+  `prisma/migrations-sqlite/`, a `dev.db.sqlite-backup` snapshot, and the local
+  `dev.db`; switch back by setting `provider = "sqlite"` and
+  `DATABASE_URL="file:./dev.db"`.
 - **zod** — request validation
 - **bcryptjs** — password hashing
 
