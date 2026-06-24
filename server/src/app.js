@@ -5,11 +5,14 @@ import apiRoutes from './routes/index.js';
 import { globalLimiter } from './middleware/rateLimit.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
-// Allowed browser origins for CORS. Configure via CLIENT_ORIGIN (comma-separated
-// for multiple). Defaults to the local Vite dev server.
+// Allowed browser origins for CORS. CLIENT_ORIGIN is a comma-separated list
+// (e.g. "https://malircanttbazaar.com,https://www.malircanttbazaar.com").
+// Defaults to the local Vite dev server. Origins are normalised so trailing
+// slashes / casing don't cause spurious rejections.
+const normOrigin = (o) => (o || '').trim().replace(/\/+$/, '').toLowerCase();
 const ALLOWED_ORIGINS = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
   .split(',')
-  .map((s) => s.trim())
+  .map(normOrigin)
   .filter(Boolean);
 
 // Express app, exported separately from the listener so it can be imported by
@@ -26,8 +29,13 @@ export function createApp() {
   app.use(
     cors({
       origin: (origin, cb) => {
-        if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-        return cb(new Error('Not allowed by CORS'));
+        // No Origin header (curl, server-to-server, same-origin) → allow.
+        if (!origin) return cb(null, true);
+        if (ALLOWED_ORIGINS.includes(normOrigin(origin))) return cb(null, true);
+        // Disallowed origin: deny CORS WITHOUT throwing — the browser blocks the
+        // request via the missing Access-Control-Allow-Origin header, and we avoid
+        // turning every cross-origin call into a 500.
+        return cb(null, false);
       },
     }),
   );
