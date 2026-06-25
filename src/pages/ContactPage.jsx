@@ -14,8 +14,9 @@ const INQUIRY_TYPES = [
   { value: 'suggestion', label: 'Suggestions',              desc: 'Ideas to make the marketplace better.' },
 ];
 
-// Placeholder — no live email integration yet.
-const SUPPORT_EMAIL = 'support@malircantt.pk';
+// Public support address (human inbox). Transactional/automated mail is sent
+// from noreply@malircanttbazaar.com (server MAIL_FROM) — keep these separate.
+const SUPPORT_EMAIL = 'support@malircanttbazaar.com';
 
 const EMPTY = { name: '', email: '', subject: '', message: '', category: 'general' };
 
