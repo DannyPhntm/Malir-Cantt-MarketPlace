@@ -9,6 +9,12 @@ const prisma = new PrismaClient();
 // sellers (+ one pending for the admin queue), and realistic listings across the
 // main categories. Idempotent — wipes and recreates.
 async function main() {
+  // This seed creates fake/demo data for LOCAL development only. Never run it in
+  // production (use scripts/create-prod-admin.js there).
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_SEED !== 'yes') {
+    console.error('Refusing to run the dev seed (fake data) with NODE_ENV=production. This is a local-dev seed only.');
+    process.exit(1);
+  }
   console.log('Seeding database…');
 
   await prisma.listingImage.deleteMany();

@@ -12,7 +12,10 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "seed": "node prisma/seed.js",
+    "seed:dev": "node prisma/seed.js",
     "create-admin": "node scripts/create-admin.js",
+    "create-prod-admin": "node scripts/create-prod-admin.js",
+    "cleanup-fake-data": "node scripts/cleanup-fake-data.js",
     "setup": "prisma migrate dev --name init && prisma generate && node prisma/seed.js",
     "studio": "prisma studio"
   },
