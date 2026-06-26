@@ -183,9 +183,13 @@ export function AuthProvider({ children }) {
     );
   }, []);
 
-  // Apply for Business Seller status, then refresh the session so the new
-  // sellerStatus ('pending') is reflected everywhere.
-  const applyForBusinessSeller = useCallback(async () => {
+  // Upgrade the CURRENT account to a Business Seller application (same userId —
+  // never a new login). A personal user with no business account yet passes
+  // { businessName, businessType }: we create the business account, then apply
+  // → sellerStatus 'pending'. Existing-account users can call with no args.
+  // Refreshes the session so the new status is reflected everywhere.
+  const applyForBusinessSeller = useCallback(async ({ businessName, businessType } = {}) => {
+    if (businessName) await authApi.applyForBusiness({ businessName, businessType: businessType || null });
     const res = await authApi.applyForSeller();
     const me = await authApi.me();
     setUser(me.user);

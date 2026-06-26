@@ -28,6 +28,10 @@ export const authApi = {
   confirmEmailChange: (newEmail, code) =>
     apiClient.post('/auth/confirm-email-change', { newEmail, code }),
 
+  // Create/update the caller's business account (links to userId — never a new
+  // login). payload: { businessName, businessType? }
+  applyForBusiness: (payload) => apiClient.post('/business-accounts', payload),
+
   // Business account applies for Business Seller status (-> pending).
   applyForSeller: () => apiClient.post('/business-accounts/apply', {}),
 
