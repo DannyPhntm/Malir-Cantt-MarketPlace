@@ -240,7 +240,7 @@ export function PulseFitHero({
         </div>
       ) : (
         <div
-          className="relative z-10 flex flex-col items-center text-center px-6"
+          className="relative z-10 flex flex-col items-center text-center px-5 sm:px-6"
           style={{ paddingTop: showHeader ? "48px" : "80px", paddingBottom: "64px" }}
         >
           <motion.div
@@ -248,7 +248,7 @@ export function PulseFitHero({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col items-center"
-            style={{ gap: "20px", maxWidth: "720px", width: "100%" }}
+            style={{ gap: "24px", maxWidth: "720px", width: "100%" }}
           >
             {/* Title */}
             <h1
@@ -287,9 +287,9 @@ export function PulseFitHero({
                 fontFamily: "var(--font-sans)",
                 fontWeight: 400,
                 fontSize: "clamp(15px, 2vw, 18px)",
-                lineHeight: 1.65,
-                color: "rgba(255,255,255,0.65)",
-                maxWidth: "540px",
+                lineHeight: 1.7,
+                color: "rgba(255,255,255,0.7)",
+                maxWidth: "460px",
               }}
             >
               {subtitle}

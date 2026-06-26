@@ -6,12 +6,12 @@ import { SELLER_STATUSES } from '../lib/constants.js';
    Seller status starts 'not_applied'; the user applies separately via /apply. */
 export const applyForBusiness = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { businessName } = req.body;
+  const { businessName, businessType } = req.body;
 
   const account = await prisma.businessAccount.upsert({
     where: { userId },
-    update: { businessName },
-    create: { userId, businessName },
+    update: { businessName, ...(businessType !== undefined ? { businessType } : {}) },
+    create: { userId, businessName, businessType: businessType || null },
   });
 
   // Reflect the chosen account type on the user.

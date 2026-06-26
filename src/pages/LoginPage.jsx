@@ -731,9 +731,10 @@ function PersonalForm({ onBack, onAuthenticated }) {
 
 /* ── Business account form ───────────────────────────────────────────────────── */
 
-function BusinessForm({ onBack }) {
+function BusinessForm({ onBack, onSwitchToSignIn }) {
   const { register, verifyEmail, resendVerification } = useAuth();
   const [stage, setStage]             = useState('form'); // 'form' | 'verify' | 'done'
+  const [existingEmail, setExistingEmail] = useState(false);
   const [form, setForm]               = useState({
     businessName: '', ownerName: '', email: '', phone: '',
     password: '', confirmPassword: '', category: '', area: '', verification: '',
@@ -785,6 +786,12 @@ function BusinessForm({ onBack }) {
         setStage('verify');
         return;
       }
+      // Existing (verified) account: this isn't a dead-end — they can log in and
+      // apply for business access on the same account.
+      if (err?.status === 409) {
+        setExistingEmail(true);
+        return;
+      }
       const { fieldErrors, general } = mapApiError(err, {
         name: 'ownerName', residentLocation: 'area',
       });
@@ -798,7 +805,26 @@ function BusinessForm({ onBack }) {
 
   return (
     <AnimatePresence mode="wait" initial={false}>
-      {stage === 'form' && (
+      {stage === 'form' && existingEmail && (
+        <motion.div key="exists" variants={STEP_VARIANTS} initial="initial" animate="enter" exit="exit">
+          <button type="button" className="reg-back-btn" onClick={() => setExistingEmail(false)}>
+            ← Back
+          </button>
+          <span className="reg-type-badge"><BuildingIcon /> Business Account</span>
+          <div className="reg-exists-notice">
+            <p className="reg-exists-notice__title">This email already has an account</p>
+            <p className="reg-exists-notice__text">
+              An account with this email already exists. Log in to apply for business access using your
+              existing account — you don't need a second account.
+            </p>
+          </div>
+          <button type="button" className="login-submit" onClick={onSwitchToSignIn}>
+            Log in and apply for business access
+          </button>
+        </motion.div>
+      )}
+
+      {stage === 'form' && !existingEmail && (
         <motion.div key="form" variants={STEP_VARIANTS} initial="initial" animate="enter" exit="exit">
           <button type="button" className="reg-back-btn" onClick={onBack}>
             ← Change account type
@@ -967,7 +993,7 @@ function BusinessForm({ onBack }) {
 
 /* ── Register panel (orchestrates picker + forms) ────────────────────────────── */
 
-function RegisterPanel({ initialType = null, onAuthenticated }) {
+function RegisterPanel({ initialType = null, onAuthenticated, onSwitchToSignIn }) {
   const [accountType, setAccountType] = useState(initialType);
 
   return (
@@ -980,7 +1006,7 @@ function RegisterPanel({ initialType = null, onAuthenticated }) {
         <motion.div key={accountType} variants={STEP_VARIANTS} initial="initial" animate="enter" exit="exit">
           {accountType === 'personal'
             ? <PersonalForm onBack={() => setAccountType(null)} onAuthenticated={onAuthenticated} />
-            : <BusinessForm onBack={() => setAccountType(null)} />
+            : <BusinessForm onBack={() => setAccountType(null)} onSwitchToSignIn={onSwitchToSignIn} />
           }
         </motion.div>
       )}
@@ -1146,7 +1172,7 @@ export default function LoginPage() {
                   </motion.div>
                 ) : (
                   <motion.div key="register" variants={TAB_VARIANTS} initial="initial" animate="enter" exit="exit">
-                    <RegisterPanel initialType={initialRegisterType} onAuthenticated={handleAuthSuccess} />
+                    <RegisterPanel initialType={initialRegisterType} onAuthenticated={handleAuthSuccess} onSwitchToSignIn={() => setTab('signin')} />
                   </motion.div>
                 )}
               </AnimatePresence>

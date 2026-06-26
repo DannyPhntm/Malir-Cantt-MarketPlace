@@ -396,6 +396,25 @@
   color: var(--color-primary);
 }
 
+.reg-exists-notice {
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-pale);
+}
+.reg-exists-notice__title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+  margin: 0 0 var(--space-2);
+}
+.reg-exists-notice__text {
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+  color: var(--color-secondary);
+  margin: 0;
+}
+
 .reg-type-badge {
   display: inline-flex;
   align-items: center;

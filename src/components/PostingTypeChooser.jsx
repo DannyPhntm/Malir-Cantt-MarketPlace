@@ -10,9 +10,10 @@ import './PostingTypeChooser.css';
  *  - businessOnly: category is commercial-only (locks to business)
  *  - isApprovedBusiness: caller has an active Business Seller account
  *  - needsApproval: business chosen but not approved → show CTA
- *  - onApply(): open the business-account application flow
+ *  - businessStatus: 'not_applied' | 'pending' | 'approved' | 'rejected'
+ *  - onApply(): open the in-app business-account application (/apply-business)
  */
-export default function PostingTypeChooser({ value, onChange, businessOnly, isApprovedBusiness, needsApproval, onApply }) {
+export default function PostingTypeChooser({ value, onChange, businessOnly, isApprovedBusiness, needsApproval, businessStatus, onApply }) {
   const pick = (next) => {
     if (businessOnly && next === 'personal') return; // commercial category — personal not allowed
     onChange(next);
@@ -68,10 +69,21 @@ export default function PostingTypeChooser({ value, onChange, businessOnly, isAp
       )}
 
       {value === 'business' && needsApproval && !isApprovedBusiness && (
-        <div className="ptype__cta">
-          <p>Business Listings need an approved business account.</p>
-          <button type="button" className="ptype__cta-btn" onClick={onApply}>Apply for a business account</button>
-        </div>
+        businessStatus === 'pending' ? (
+          <div className="ptype__cta">
+            <p>Your business application is under review. You can post a personal listing in the meantime.</p>
+          </div>
+        ) : businessStatus === 'rejected' ? (
+          <div className="ptype__cta">
+            <p>Your business application was not approved. Reapply or contact support.</p>
+            <button type="button" className="ptype__cta-btn" onClick={onApply}>Reapply for a business account</button>
+          </div>
+        ) : (
+          <div className="ptype__cta">
+            <p>Business Listings need an approved business account.</p>
+            <button type="button" className="ptype__cta-btn" onClick={onApply}>Apply for a business account</button>
+          </div>
+        )
       )}
 
       <p className="ptype__note">

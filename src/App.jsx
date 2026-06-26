@@ -28,6 +28,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage'));
 const ShopsPage = lazy(() => import('./pages/ShopsPage'));
 const ShopDetailPage = lazy(() => import('./pages/ShopDetailPage'));
 const ManageShopPage = lazy(() => import('./pages/ManageShopPage'));
+const BusinessApplyPage = lazy(() => import('./pages/BusinessApplyPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="/shops"             element={<ShopsPage />} />
           <Route path="/shops/:id"         element={<ShopDetailPage />} />
           <Route path="/my-shop"           element={<RequireAuth><ManageShopPage /></RequireAuth>} />
+          <Route path="/apply-business"    element={<RequireAuth><BusinessApplyPage /></RequireAuth>} />
           <Route path="/about"             element={<AboutPage />} />
           <Route path="/contact"           element={<ContactPage />} />
           <Route path="/admin"             element={<RequireAdmin><AdminPage /></RequireAdmin>} />

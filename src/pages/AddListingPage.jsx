@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useListings } from '../context/ListingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -74,7 +74,8 @@ function compressImage(file, maxDim = 1200, quality = 0.82) {
 
 export default function AddListingPage() {
   const { addListing } = useListings();
-  const { profile, userType, isApprovedSeller, applyForBusinessSeller } = useAuth();
+  const { profile, isApprovedSeller, businessStatus } = useAuth();
+  const navigate = useNavigate();
 
   // Restore any saved draft (captured once on mount).
   const draftRef = useRef(loadDraft());
@@ -87,7 +88,6 @@ export default function AddListingPage() {
     ...(draftRef.current?.form || {}),
   }));
   const [showServicesModal, setShowServicesModal] = useState(false);
-  const [applyingSeller, setApplyingSeller] = useState(false);
   const [listingTier, setListingTier] = useState(() => draftRef.current?.listingTier || LISTING_TIER.STANDARD);
   const [categoryFields, setCategoryFields] = useState(() => draftRef.current?.categoryFields || {});
   const [submitted, setSubmitted] = useState(null); // created listing after success
@@ -150,18 +150,8 @@ export default function AddListingPage() {
   // True when the chosen posting requires an approved seller the user lacks.
   const needsSeller = form.postingType === 'business' && !isApprovedSeller;
 
-  // Business account applies for seller status from the gate modal.
-  const handleApplySeller = async () => {
-    setApplyingSeller(true);
-    try {
-      await applyForBusinessSeller();
-      setShowServicesModal(false);
-    } catch {
-      /* keep the modal open; the apply call surfaced its own error path */
-    } finally {
-      setApplyingSeller(false);
-    }
-  };
+  // Send the user to the in-app business application (same account, no re-register).
+  const goApplyBusiness = () => navigate('/apply-business');
 
   const handleCategoryFieldChange = (e) => {
     const { name, value } = e.target;
@@ -416,7 +406,8 @@ export default function AddListingPage() {
                       businessOnly={!!catConfig?.businessOnly}
                       isApprovedBusiness={isApprovedSeller}
                       needsApproval={needsSeller}
-                      onApply={() => setShowServicesModal(true)}
+                      businessStatus={businessStatus}
+                      onApply={goApplyBusiness}
                     />
                   )}
                 </div>
@@ -738,11 +729,10 @@ export default function AddListingPage() {
       <AnimatePresence>
         {showServicesModal && (
           <BusinessRequiredModal
-            title="Business Seller required"
-            message="Business selling requires an approved Business Seller account. Apply for Business Seller status to post commercial listings."
-            primaryLabel={userType === 'business' ? 'Apply for Business Seller' : 'Register a Business Account'}
-            primaryBusy={applyingSeller}
-            onPrimary={userType === 'business' ? handleApplySeller : undefined}
+            title="Business account required"
+            message="This category is for businesses. Apply for a business account using your existing login to post commercial listings."
+            primaryLabel="Apply for a business account"
+            onPrimary={goApplyBusiness}
             secondaryLabel="Back"
             onDismiss={() => {
               setShowServicesModal(false);

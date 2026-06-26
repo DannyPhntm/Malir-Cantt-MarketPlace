@@ -188,6 +188,7 @@ export const businessApplySchema = z.object({
   // Owner is taken from the auth token.
   userId: z.number().int().positive().optional(),
   businessName: z.string().trim().min(2, 'Business name is required.'),
+  businessType: z.string().trim().max(60).optional().nullable(),
 });
 
 /* ── Saved listings ──────────────────────────────────────────────────────────── */

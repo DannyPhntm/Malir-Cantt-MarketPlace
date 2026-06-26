@@ -231,6 +231,14 @@ export default function DashboardPage() {
         : 'Approve your business to add a shop',
       to:    '/my-shop',
     });
+  } else {
+    // Personal accounts can upgrade the SAME account to a business application.
+    cards.push({
+      icon:  <BuildingIcon />,
+      title: 'Apply for a business account',
+      desc:  'Want to post as a shop or business? Unlock business listings, a shop profile, and verified business features.',
+      to:    '/apply-business',
+    });
   }
 
   return (
