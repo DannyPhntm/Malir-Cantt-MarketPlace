@@ -73,7 +73,7 @@ export default function HomePage() {
           backgroundImage="/malir-cantt-gate.png"
           title="Find Everything"
           titleAccent="Inside Malir Cantt."
-          subtitle="Buy, sell, hire, and discover with your neighbours. From local businesses and jobs to services and home food — the trusted community bazaar for Malir Cantt residents."
+          subtitle="Buy and sell within Malir Cantt. Find local shops, services, jobs, and everyday listings from people in your community."
           showSearch={true}
           searchPlaceholder="Search for cars, electronics, property..."
           onSearch={(q) => { if (q.trim()) navigate(`/listings?q=${encodeURIComponent(q.trim())}`); }}
