@@ -37,7 +37,9 @@ export const POSTING_TYPES = ['personal', 'business'];
 export const SELLER_STATUSES = ['not_applied', 'pending', 'approved', 'rejected'];
 
 // Categories that are inherently commercial → listings forced to business.
-export const BUSINESS_ONLY_CATEGORIES = ['food', 'services'];
+// Services allows a personal path (individual tutor / casual help), so it is NOT
+// here; food (cooked-food sale) stays commercial-only.
+export const BUSINESS_ONLY_CATEGORIES = ['food'];
 export const IMAGE_OPTIONAL_CATEGORIES = ['jobs', 'services', 'other'];
 export const MAX_FEATURED_PER_BUSINESS = 2;
 

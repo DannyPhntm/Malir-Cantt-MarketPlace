@@ -8,6 +8,7 @@ import { LISTING_TIER } from '../data/premiumConfig';
 import CategoryFields from '../components/CategoryFields';
 import BusinessRequiredModal from '../components/BusinessRequiredModal';
 import FeaturedListingOption from '../components/FeaturedListingOption';
+import PostingTypeChooser from '../components/PostingTypeChooser';
 import PageTransition from '../components/PageTransition';
 import './AddListingPage.css';
 
@@ -397,46 +398,17 @@ export default function AddListingPage() {
                     </div>
                   )}
 
-                  {/* Posting type — personal vs business (commercial categories lock to business) */}
+                  {/* Posting type — personal vs business, asked for every category */}
                   {form.category && (
-                    <div className="form-group">
-                      <label className="form-label">Posting as</label>
-                      {catConfig?.businessOnly ? (
-                        <p className="form-helper">
-                          This is a commercial category — your listing will be posted as a <strong>business listing</strong> and requires an approved Business Seller account.
-                        </p>
-                      ) : (
-                        <div className="form-posting-type">
-                          <label className="form-posting-type__opt">
-                            <input type="radio" name="postingType" value="personal"
-                              checked={form.postingType === 'personal'} onChange={handleChange} />
-                            <span>Personal listing</span>
-                          </label>
-                          <label className="form-posting-type__opt">
-                            <input type="radio" name="postingType" value="business"
-                              checked={form.postingType === 'business'} onChange={handleChange} />
-                            <span>Business listing</span>
-                          </label>
-                        </div>
-                      )}
-                      {needsSeller && (
-                        businessStatus === 'pending' ? (
-                          <p className="form-helper" role="status">
-                            Your business application is under review. You can post a personal listing in the meantime.
-                          </p>
-                        ) : businessStatus === 'rejected' ? (
-                          <p className="form-error" role="alert">
-                            Your business application was not approved.{' '}
-                            <Link to="/apply-business" className="form-inline-link">Reapply</Link> or contact support.
-                          </p>
-                        ) : (
-                          <p className="form-error" role="alert">
-                            Business listings need an approved business account.{' '}
-                            <Link to="/apply-business" className="form-inline-link">Apply for a business account</Link>
-                          </p>
-                        )
-                      )}
-                    </div>
+                    <PostingTypeChooser
+                      value={form.postingType}
+                      onChange={(next) => setForm((prev) => ({ ...prev, postingType: next }))}
+                      businessOnly={!!catConfig?.businessOnly}
+                      isApprovedBusiness={isApprovedSeller}
+                      needsApproval={needsSeller}
+                      businessStatus={businessStatus}
+                      onApply={goApplyBusiness}
+                    />
                   )}
                 </div>
 

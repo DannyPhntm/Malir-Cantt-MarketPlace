@@ -421,6 +421,9 @@ export default function AdminPage() {
                           <div className="admin__row-top">
                             <Link to={`/listing/${l.id}`} className="admin__row-title">{l.title}</Link>
                             <span className="admin__tag">{STATUS_LABEL[l.status] || l.status}</span>
+                            <span className={`admin__tag${l.postingType === 'business' ? ' admin__tag--featured' : ''}`}>
+                              {l.postingType === 'business' ? 'Business' : 'Personal'}
+                            </span>
                             {l.featured && <span className="admin__tag admin__tag--featured">Featured</span>}
                             {l.featuredRequested && !l.featured && <span className="admin__tag admin__tag--featured">Featured requested</span>}
                           </div>
@@ -430,6 +433,12 @@ export default function AdminPage() {
                             <span className="admin__row-price">{l.price}</span>
                             <span className="admin__row-dot" aria-hidden="true" />
                             <span>{l.seller.name}</span>
+                            {l.postingType === 'business' && l.shop && (
+                              <>
+                                <span className="admin__row-dot" aria-hidden="true" />
+                                <span>Shop: {l.shop.name}</span>
+                              </>
+                            )}
                           </div>
                         </div>
                         <div className="admin__row-actions">{listingActions(l)}</div>

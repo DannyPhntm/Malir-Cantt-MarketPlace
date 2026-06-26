@@ -104,6 +104,14 @@ export function adaptListing(listing) {
     subcategory: listing.subcategory || null,
     subcategoryLabel: subcategoryLabel(listing.category, listing.subcategory),
     postingType: listing.postingType || 'personal',
+    // Linked shop (business listings). UI links publicly only when approved.
+    shopId: listing.shopId ?? listing.shop?.id ?? null,
+    shop: listing.shop
+      ? { id: listing.shop.id, name: listing.shop.name, logoUrl: listing.shop.logoUrl || null, status: listing.shop.status }
+      : null,
+    // Monetization-ready promotion windows (no payments yet).
+    featuredUntil: listing.featuredUntil || null,
+    boostedUntil: listing.boostedUntil || null,
     details,
     meta: buildMeta(listing.category, details),
     price: formatPrice(listing.price),
