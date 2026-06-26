@@ -775,3 +775,50 @@
   color: #8a6d1f;
   font-weight: var(--fw-semibold);
 }
+
+/* ── Business Access card ─────────────────────────────────────────────── */
+.prf-biz { display: flex; flex-direction: column; gap: var(--space-3); }
+.prf-biz__head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.prf-biz__label {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--fw-bold);
+  color: var(--color-primary);
+}
+.prf-biz__label--pending { color: #8a6d1f; }
+.prf-biz__label--rejected { color: var(--color-danger); }
+.prf-biz__text {
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+  color: var(--color-secondary);
+  margin: 0;
+}
+.prf-biz__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+}
+.prf-biz__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-1); }
+.prf-biz__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+}
+.prf-biz__btn--ghost {
+  background: var(--color-white);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+}
+@media (max-width: 480px) {
+  .prf-biz__btn { width: 100%; }
+}
