@@ -37,8 +37,9 @@ export default function PostingTypeChooser({ value, onChange, businessOnly, isAp
           </span>
           <span className="ptype__card-desc">
             For Malir Cantt residents selling personal items or posting one-time needs. Best for used
-            items, personal cars, furniture, property by owner, or household help requests. Personal
-            listings are free and do not include business branding.
+            items, personal cars, furniture, property by owner, or household help requests. Buyers can
+            still contact you by phone/WhatsApp. Personal listings are free and do not include business
+            branding.
           </span>
         </button>
 
@@ -56,8 +57,8 @@ export default function PostingTypeChooser({ value, onChange, businessOnly, isAp
           <span className="ptype__card-desc">
             For shops, services, restaurants, gyms, academies, agencies, dealerships, and companies
             promoting commercial offers, jobs, products, or services. Business listings require an
-            approved business account and can show your verified business badge, shop name, logo,
-            WhatsApp/contact button, and link to your shop profile.
+            approved business account and add your verified business badge, shop name and logo, and a
+            link to your shop profile — on top of the usual phone/WhatsApp contact.
           </span>
         </button>
       </div>
