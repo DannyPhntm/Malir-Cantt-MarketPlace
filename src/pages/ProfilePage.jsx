@@ -501,6 +501,8 @@ function PasswordChangeSection() {
 // Business fields default to empty if not in profile. Module-level so the
 // reference is stable across renders (no need to list it as a hook dependency).
 const BLANK_BUSINESS = { businessName: '', businessCategory: '', businessArea: '' };
+// Active-featured cap per business (mirrors MAX_FEATURED_PER_BUSINESS on the server).
+const FEATURED_CAP = 2;
 
 export default function ProfilePage() {
   const { profile, updateProfile, userType, businessStatus, sellerStatus, applyForBusinessSeller } = useAuth();
@@ -837,6 +839,61 @@ export default function ProfilePage() {
                   <span className="prf-account-value">{stats ? stats.active : '—'}</span>
                 </div>
               </div>
+            </SectionCard>
+          </motion.div>
+
+          {/* ── Business Access — upgrade/apply on the SAME account ───────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1,  y: 0 }}
+            transition={{ duration: dur.slow, ease: ease.out, delay: 0.16 }}
+          >
+            <SectionCard title="Business Access">
+              {businessStatus === 'approved' ? (
+                <div className="prf-biz">
+                  <div className="prf-biz__head">
+                    <span className="prf-biz__label">Business Approved</span>
+                    {profile.isVerified && <VerifiedBadge type={profile.badgeType || 'business'} size="md" />}
+                  </div>
+                  <p className="prf-biz__text">Your account can manage a shop profile and post business listings.</p>
+                  <div className="prf-biz__stats">
+                    <span>Featured slots: <strong>{stats ? stats.featured : '—'} of {FEATURED_CAP} used</strong></span>
+                    <span>Active listings: <strong>{stats ? stats.active : '—'}</strong></span>
+                  </div>
+                  <div className="prf-biz__actions">
+                    <Link to="/my-shop" className="prf-biz__btn">Manage Shop</Link>
+                    <Link to="/add-listing" className="prf-biz__btn prf-biz__btn--ghost">Create Business Listing</Link>
+                  </div>
+                </div>
+              ) : businessStatus === 'pending' ? (
+                <div className="prf-biz">
+                  <span className="prf-biz__label prf-biz__label--pending">Pending review</span>
+                  <p className="prf-biz__text">
+                    Your business application is under review. You'll be able to create a shop profile and
+                    business listings once approved.
+                  </p>
+                </div>
+              ) : businessStatus === 'rejected' ? (
+                <div className="prf-biz">
+                  <span className="prf-biz__label prf-biz__label--rejected">Not approved</span>
+                  <p className="prf-biz__text">
+                    Your business application was not approved. Contact support if you think this was a mistake.
+                  </p>
+                  <div className="prf-biz__actions">
+                    <Link to="/apply-business" className="prf-biz__btn">Reapply for Business Account</Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="prf-biz">
+                  <p className="prf-biz__text">
+                    Want to post as a shop or business? Apply for a business account to unlock business
+                    listings, a shop profile, and verified business features — using this same account.
+                  </p>
+                  <div className="prf-biz__actions">
+                    <Link to="/apply-business" className="prf-biz__btn">Apply for Business Account</Link>
+                  </div>
+                </div>
+              )}
             </SectionCard>
           </motion.div>
 
