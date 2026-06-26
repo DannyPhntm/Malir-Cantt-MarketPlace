@@ -4,6 +4,7 @@ import userRoutes from './users.routes.js';
 import listingRoutes from './listings.routes.js';
 import businessRoutes from './businessAccounts.routes.js';
 import savedRoutes from './saved.routes.js';
+import shopRoutes from './shops.routes.js';
 import { getStats, getPublicStats } from '../controllers/stats.controller.js';
 import { createContactMessage } from '../controllers/contact.controller.js';
 import { validate } from '../middleware/validate.js';
@@ -24,5 +25,6 @@ router.use('/users', userRoutes);
 router.use('/listings', listingRoutes);
 router.use('/business-accounts', businessRoutes);
 router.use('/saved', savedRoutes);
+router.use('/shops', shopRoutes);
 
 export default router;

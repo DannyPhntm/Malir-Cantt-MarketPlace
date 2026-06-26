@@ -25,6 +25,9 @@ const SavedListingsPage = lazy(() => import('./pages/SavedListingsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SellerProfilePage = lazy(() => import('./pages/SellerProfilePage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
+const ShopsPage = lazy(() => import('./pages/ShopsPage'));
+const ShopDetailPage = lazy(() => import('./pages/ShopDetailPage'));
+const ManageShopPage = lazy(() => import('./pages/ManageShopPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
@@ -81,6 +84,9 @@ export default function App() {
           <Route path="/saved-listings"    element={<RequireAuth><SavedListingsPage /></RequireAuth>} />
           <Route path="/profile"           element={<RequireAuth><ProfilePage /></RequireAuth>} />
           <Route path="/seller/:sellerName" element={<SellerProfilePage />} />
+          <Route path="/shops"             element={<ShopsPage />} />
+          <Route path="/shops/:id"         element={<ShopDetailPage />} />
+          <Route path="/my-shop"           element={<RequireAuth><ManageShopPage /></RequireAuth>} />
           <Route path="/about"             element={<AboutPage />} />
           <Route path="/contact"           element={<ContactPage />} />
           <Route path="/admin"             element={<RequireAdmin><AdminPage /></RequireAdmin>} />

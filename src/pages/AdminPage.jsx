@@ -4,7 +4,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import PageTransition from '../components/PageTransition';
 import LoadingState from '../components/LoadingState';
 import adminApi from '../services/adminApi';
+import shopsApi from '../services/shopsApi';
 import { adaptListing } from '../services/listingAdapter';
+import { SHOP_CATEGORY_LABEL } from '../data/shopConfig';
 import './AdminPage.css';
 
 function CheckIcon() {
@@ -76,6 +78,7 @@ export default function AdminPage() {
   const [featuredReqs, setFeaturedReqs] = useState([]);
   const [businesses, setBusinesses] = useState([]);
   const [users, setUsers] = useState([]);
+  const [shops, setShops] = useState([]);
   const [userSearch, setUserSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -87,16 +90,18 @@ export default function AdminPage() {
     setLoading(true);
     setError(null);
     try {
-      const [sres, fres, bres, ures] = await Promise.all([
+      const [sres, fres, bres, ures, shres] = await Promise.all([
         adminApi.getStats(),
         adminApi.listFeaturedRequests(),
         adminApi.listBusinessAccounts('pending'),
         adminApi.listUsers(),
+        shopsApi.listAll(),
       ]);
       setStats(sres.stats);
       setFeaturedReqs(fres.listings.map(adaptListing));
       setBusinesses(bres.businessAccounts);
       setUsers(ures.users);
+      setShops(shres.shops || []);
     } catch (e) {
       setError(e?.message || 'Failed to load the admin dashboard.');
     } finally {
@@ -185,6 +190,26 @@ export default function AdminPage() {
       refreshStats();
     } catch (e) {
       setError(e?.message || 'Could not update the application.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // Shops moderation: action 'approve' | 'hide' | 'delete'.
+  const decideShop = async (id, action, label) => {
+    setBusyId(`s${id}`);
+    setError(null);
+    try {
+      if (action === 'delete') {
+        await shopsApi.remove(id);
+        setShops((prev) => prev.filter((s) => s.id !== id));
+      } else {
+        const res = await shopsApi.setStatus(id, action === 'approve' ? 'approved' : 'hidden');
+        setShops((prev) => prev.map((s) => (s.id === id ? res.shop : s)));
+      }
+      showFlash(label);
+    } catch (e) {
+      setError(e?.message || 'Could not update the shop.');
     } finally {
       setBusyId(null);
     }
@@ -345,6 +370,11 @@ export default function AdminPage() {
                 className={`admin__tab${tab === 'users' ? ' admin__tab--active' : ''}`}
                 onClick={() => setTab('users')}>
                 Users <span className="admin__tab-count">{users.length}</span>
+              </button>
+              <button role="tab" aria-selected={tab === 'shops'}
+                className={`admin__tab${tab === 'shops' ? ' admin__tab--active' : ''}`}
+                onClick={() => setTab('shops')}>
+                Shops <span className="admin__tab-count">{shops.length}</span>
               </button>
             </div>
 
@@ -509,7 +539,7 @@ export default function AdminPage() {
                   })}
                 </ul>
               )
-            ) : (
+            ) : tab === 'users' ? (
               /* Users */
               <>
                 <form className="admin__search" onSubmit={handleUserSearch} role="search">
@@ -553,6 +583,48 @@ export default function AdminPage() {
                   </ul>
                 )}
               </>
+            ) : (
+              /* Shops */
+              shops.length === 0 ? (
+                <div className="admin__empty">No shops yet.</div>
+              ) : (
+                <ul className="admin__list">
+                  {shops.map((s) => {
+                    const busy = busyId === `s${s.id}`;
+                    return (
+                      <li key={s.id} className="admin__row">
+                        <div className="admin__row-thumb admin__row-thumb--biz" aria-hidden="true">
+                          {s.logoUrl ? <img src={s.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} /> : (s.name || '?')[0].toUpperCase()}
+                        </div>
+                        <div className="admin__row-main">
+                          <div className="admin__row-top">
+                            <span className="admin__row-title">{s.name}</span>
+                            <span className="admin__tag">{SHOP_CATEGORY_LABEL[s.shopCategory] || s.shopCategory}</span>
+                            <span className={`admin__tag${s.status === 'approved' ? ' admin__tag--featured' : ''}`}>{s.status}</span>
+                          </div>
+                          <div className="admin__row-meta">
+                            <span>{s.owner?.businessName || s.owner?.name || '—'}</span>
+                            <span className="admin__row-dot" aria-hidden="true" />
+                            <span>{s.location}</span>
+                          </div>
+                        </div>
+                        <div className="admin__row-actions">
+                          {s.status !== 'approved' && (
+                            <button className="admin__btn admin__btn--approve" disabled={busy}
+                              onClick={() => decideShop(s.id, 'approve', 'Shop approved')}>Approve</button>
+                          )}
+                          {s.status === 'approved' && (
+                            <button className="admin__btn" disabled={busy}
+                              onClick={() => decideShop(s.id, 'hide', 'Shop hidden')}>Hide</button>
+                          )}
+                          <button className="admin__btn admin__btn--reject" disabled={busy}
+                            onClick={() => { if (window.confirm(`Delete shop "${s.name}"?`)) decideShop(s.id, 'delete', 'Shop deleted'); }}>Delete</button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
             )}
 
           </div>

@@ -37,6 +37,7 @@ model User {
   listings        Listing[]
   businessAccount BusinessAccount?
   savedListings   SavedListing[]
+  shop            Shop?
 
   @@map("users")
 }
@@ -113,6 +114,34 @@ model BusinessAccount {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("business_accounts")
+}
+
+// ── Shops (business directory) ───────────────────────────────────────────────
+// A permanent shop/business profile (distinct from item listings). One shop per
+// approved business user. Public sees only `approved` shops.
+model Shop {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @unique @map("user_id")
+  name              String
+  shopCategory      String   @map("shop_category")
+  sells             String? // free-text "what they sell" tags
+  description       String?
+  location          String
+  phone             String
+  whatsapp          String?
+  openingHours      String?  @map("opening_hours")
+  deliveryAvailable Boolean  @default(false) @map("delivery_available")
+  logoUrl           String?  @map("logo_url")
+  images            String? // JSON array of image URLs / data-URLs
+  status            String   @default("pending") // pending | approved | hidden
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([shopCategory])
+  @@index([status])
+  @@map("shops")
 }
 
 // ── Email verification codes ─────────────────────────────────────────────────
