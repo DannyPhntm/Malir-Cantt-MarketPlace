@@ -10,6 +10,9 @@ import {
   POSTING_TYPES,
   SELLER_STATUSES,
   PAYMENT_STATUSES,
+  SHOP_CATEGORIES,
+  SHOP_STATUSES,
+  MAX_SHOP_IMAGES,
   isValidSubcategory,
 } from '../lib/constants.js';
 
@@ -206,3 +209,32 @@ export const businessDecisionSchema = z
 
 // Business account applies for Business Seller status — no body (account from token).
 export const sellerApplySchema = z.object({});
+
+/* ── Shops directory ─────────────────────────────────────────────────────────── */
+const shopImage = z.string().trim().max(1_500_000); // external URL or base64 data-URL
+
+export const shopCreateSchema = z.object({
+  name: z.string().trim().min(2, 'Shop name is required.').max(120),
+  shopCategory: z.enum(SHOP_CATEGORIES),
+  sells: z.string().trim().max(300).optional().nullable(),
+  description: z.string().trim().max(2000).optional().nullable(),
+  location: z.string().trim().min(2, 'Location is required.').max(160),
+  phone,
+  whatsapp: phone.optional().nullable(),
+  openingHours: z.string().trim().max(120).optional().nullable(),
+  deliveryAvailable: z.boolean().optional().default(false),
+  logoUrl: z.string().trim().max(1_500_000).optional().nullable(),
+  images: z.array(shopImage).max(MAX_SHOP_IMAGES, `A shop can have at most ${MAX_SHOP_IMAGES} images.`).optional().default([]),
+});
+
+export const shopUpdateSchema = shopCreateSchema
+  .partial()
+  .refine((d) => Object.keys(d).length > 0, { message: 'No fields to update.' });
+
+export const shopStatusSchema = z.object({ status: z.enum(SHOP_STATUSES) });
+
+export const shopQuerySchema = z.object({
+  shopCategory: z.enum(SHOP_CATEGORIES).optional(),
+  status: z.enum(SHOP_STATUSES).optional(),
+  q: z.string().trim().max(100).optional(),
+});

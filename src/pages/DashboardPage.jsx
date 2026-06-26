@@ -225,9 +225,11 @@ export default function DashboardPage() {
   if (userType === 'business') {
     cards.push({
       icon:  <BuildingIcon />,
-      title: 'Business Profile',
-      desc:  'Manage your business page and listings',
-      soon:  true,
+      title: 'My Shop',
+      desc:  businessStatus === 'approved'
+        ? 'Create or edit your shop in the directory'
+        : 'Approve your business to add a shop',
+      to:    '/my-shop',
     });
   }
 

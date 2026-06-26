@@ -44,6 +44,15 @@ export const MAX_FEATURED_PER_BUSINESS = 2;
 export const MIN_IMAGES = 1;
 export const MAX_IMAGES = 10;
 
+// ── Shops directory ──────────────────────────────────────────────────────────
+export const SHOP_CATEGORIES = [
+  'grocery', 'food-restaurants', 'electronics-mobile', 'clothing-fashion',
+  'pharmacy-health', 'car-services', 'home-furniture', 'beauty-salon',
+  'stationery-books', 'gyms-fitness', 'services-repairs', 'other',
+];
+export const SHOP_STATUSES = ['pending', 'approved', 'hidden'];
+export const MAX_SHOP_IMAGES = 6;
+
 export const LISTING_STATUSES = ['pending', 'approved', 'rejected', 'sold', 'hidden'];
 
 // Statuses an owner may set on their own listing (lifecycle, not moderation).

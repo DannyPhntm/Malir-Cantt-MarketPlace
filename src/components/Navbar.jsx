@@ -9,7 +9,7 @@ import './Navbar.css';
 const NAV_LINKS = [
   { label: 'Browse',     to: '/listings' },
   { label: 'Categories', dropdown: true },
-  { label: 'Listings',   to: '/listings' },
+  { label: 'Shops',      to: '/shops' },
   { label: 'About',      to: '/about' },
   { label: 'Contact',    to: '/contact' },
 ];
