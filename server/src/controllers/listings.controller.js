@@ -9,7 +9,11 @@ import {
   MAX_FEATURED_PER_BUSINESS,
 } from '../lib/constants.js';
 
-const withImages = { images: { orderBy: { displayOrder: 'asc' } } };
+const withImages = {
+  images: { orderBy: { displayOrder: 'asc' } },
+  // Linked shop (business listings) — public link shown only when approved.
+  shop: { select: { id: true, name: true, logoUrl: true, status: true } },
+};
 
 // Fields exposed about the listing owner (the "seller") to the public read
 // endpoints. Phone is included because the marketplace's core action is letting
@@ -89,7 +93,9 @@ export const createListing = asyncHandler(async (req, res) => {
   const forcedBusiness = BUSINESS_ONLY_CATEGORIES.includes(category);
   const postingType = forcedBusiness ? 'business' : (req.body.postingType || 'personal');
 
-  // Business listings require an active Business Seller (approved + settled).
+  // Business listings require an active Business Seller (approved + settled),
+  // and link to the poster's Shop (directory) when they have one.
+  let shopId = null;
   if (postingType === 'business') {
     const account = await prisma.businessAccount.findUnique({ where: { userId } });
     const settled = account && (account.paymentStatus === 'paid' || account.paymentStatus === 'waived');
@@ -97,6 +103,8 @@ export const createListing = asyncHandler(async (req, res) => {
     if (!active) {
       throw new ApiError(403, 'Business selling requires an approved Business Seller account. Apply for Business Seller status to post commercial listings.');
     }
+    const shop = await prisma.shop.findUnique({ where: { userId }, select: { id: true } });
+    shopId = shop?.id ?? null;
   }
 
   // Drop empty values, then store the attribute map as JSON.
@@ -112,6 +120,7 @@ export const createListing = asyncHandler(async (req, res) => {
       category,
       subcategory: subcategory || null,
       postingType,
+      shopId,
       price,
       featuredRequested,
       featuredActive: false,

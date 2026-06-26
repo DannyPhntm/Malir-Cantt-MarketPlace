@@ -8,6 +8,7 @@ import { LISTING_TIER } from '../data/premiumConfig';
 import CategoryFields from '../components/CategoryFields';
 import BusinessRequiredModal from '../components/BusinessRequiredModal';
 import FeaturedListingOption from '../components/FeaturedListingOption';
+import PostingTypeChooser from '../components/PostingTypeChooser';
 import PageTransition from '../components/PageTransition';
 import './AddListingPage.css';
 
@@ -407,37 +408,16 @@ export default function AddListingPage() {
                     </div>
                   )}
 
-                  {/* Posting type — personal vs business (commercial categories lock to business) */}
+                  {/* Posting type — personal vs business, asked for every category */}
                   {form.category && (
-                    <div className="form-group">
-                      <label className="form-label">Posting as</label>
-                      {catConfig?.businessOnly ? (
-                        <p className="form-helper">
-                          This is a commercial category — your listing will be posted as a <strong>business listing</strong> and requires an approved Business Seller account.
-                        </p>
-                      ) : (
-                        <div className="form-posting-type">
-                          <label className="form-posting-type__opt">
-                            <input type="radio" name="postingType" value="personal"
-                              checked={form.postingType === 'personal'} onChange={handleChange} />
-                            <span>Personal listing</span>
-                          </label>
-                          <label className="form-posting-type__opt">
-                            <input type="radio" name="postingType" value="business"
-                              checked={form.postingType === 'business'} onChange={handleChange} />
-                            <span>Business listing</span>
-                          </label>
-                        </div>
-                      )}
-                      {needsSeller && (
-                        <p className="form-error" role="alert">
-                          Business selling requires an approved Business Seller account.{' '}
-                          <button type="button" className="form-inline-link" onClick={() => setShowServicesModal(true)}>
-                            Apply for Business Seller
-                          </button>
-                        </p>
-                      )}
-                    </div>
+                    <PostingTypeChooser
+                      value={form.postingType}
+                      onChange={(next) => setForm((prev) => ({ ...prev, postingType: next }))}
+                      businessOnly={!!catConfig?.businessOnly}
+                      isApprovedBusiness={isApprovedSeller}
+                      needsApproval={needsSeller}
+                      onApply={() => setShowServicesModal(true)}
+                    />
                   )}
                 </div>
 

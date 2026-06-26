@@ -109,7 +109,7 @@ export const CATEGORY_CONFIG = {
     titlePlaceholder: 'e.g. AC Repair & Installation Service',
     priceLabel: 'Rate',
     pricePlaceholder: 'e.g. 2,000/hour or by quote',
-    businessOnly: true,
+    // Services allows a personal path (individual tutor / casual help) — not business-only.
     images: { required: false, min: 0, max: 10, label: 'Showcase your previous work with portfolio images (optional).' },
     subcategories: [
       { slug: 'tutors', label: 'Tutors' }, { slug: 'repair', label: 'Repair' },

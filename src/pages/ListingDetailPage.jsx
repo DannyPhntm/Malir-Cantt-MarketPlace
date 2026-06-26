@@ -406,6 +406,11 @@ export default function ListingDetailPage() {
                     >
                       View Profile →
                     </Link>
+                    {listing.postingType === 'business' && listing.shop?.status === 'approved' && (
+                      <Link to={`/shops/${listing.shop.id}`} className="detail__seller-profile-link">
+                        Visit shop →
+                      </Link>
+                    )}
                   </div>
                 </div>
 

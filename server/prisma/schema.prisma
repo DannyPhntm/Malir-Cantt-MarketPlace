@@ -51,9 +51,14 @@ model Listing {
   category          String // vehicles | property | electronics | home-living | fashion | services | food | jobs | fitness | other
   subcategory       String?  @map("subcategory") // slug within the category, or null
   postingType       String   @default("personal") @map("posting_type") // personal | business
+  shopId            Int?      @map("shop_id") // business listings link to the poster's Shop (directory) when they have one
   price             Int // stored in PKR (whole rupees)
   featuredRequested Boolean  @default(false) @map("featured_requested")
   featuredActive    Boolean  @default(false) @map("featured_active")
+  // Monetization-ready (no payments yet): a future timestamp = promotion active.
+  // Set manually / by admin for now; a payment gateway can populate them later.
+  featuredUntil     DateTime? @map("featured_until")
+  boostedUntil      DateTime? @map("boosted_until")
   status            String   @default("pending") // pending | approved | rejected | sold | hidden
   // Category-specific attributes (make/model/year, bedrooms, foodType, …) stored
   // as a JSON string — the set of fields varies by category (see categoryConfig).
@@ -61,12 +66,14 @@ model Listing {
   createdAt         DateTime @default(now()) @map("created_at")
 
   user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop    Shop?          @relation(fields: [shopId], references: [id], onDelete: SetNull)
   images  ListingImage[]
   savedBy SavedListing[]
 
   @@index([userId])
   @@index([category])
   @@index([status])
+  @@index([shopId])
   @@map("listings")
 }
 
@@ -137,7 +144,8 @@ model Shop {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings Listing[]
 
   @@index([shopCategory])
   @@index([status])
