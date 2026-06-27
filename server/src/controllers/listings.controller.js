@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma.js';
 import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
+import { storeImages } from '../lib/imageStorage.js';
 import {
   OWNER_SETTABLE_STATUSES,
   BUSINESS_ONLY_CATEGORIES,
@@ -112,6 +113,10 @@ export const createListing = asyncHandler(async (req, res) => {
     Object.entries(details || {}).filter(([, v]) => v != null && String(v).trim() !== ''),
   );
 
+  // Persist images to object storage (Cloudinary) when configured; otherwise the
+  // data URL is stored as-is (dev fallback). Returns stable { imageUrl, displayOrder }.
+  const storedImages = await storeImages(images);
+
   const listing = await prisma.listing.create({
     data: {
       userId,
@@ -126,12 +131,7 @@ export const createListing = asyncHandler(async (req, res) => {
       featuredActive: false,
       status: 'pending',
       details: Object.keys(cleanedDetails).length ? JSON.stringify(cleanedDetails) : null,
-      images: {
-        create: images.map((img, i) => ({
-          imageUrl: img.imageUrl,
-          displayOrder: img.displayOrder ?? i,
-        })),
-      },
+      images: { create: storedImages },
     },
     include: withImages,
   });
@@ -190,9 +190,11 @@ export const updateListing = asyncHandler(async (req, res) => {
     if (images.length > MAX_IMAGES) {
       throw new ApiError(422, `A listing can have at most ${MAX_IMAGES} images.`);
     }
+    // New uploads (data URLs) go to object storage; kept images (http URLs) pass through.
+    const storedImages = await storeImages(images);
     data.images = {
       deleteMany: {},
-      create: images.map((img, i) => ({ imageUrl: img.imageUrl, displayOrder: img.displayOrder ?? i })),
+      create: storedImages,
     };
   }
 
