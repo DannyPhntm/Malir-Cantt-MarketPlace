@@ -10,6 +10,7 @@ import BusinessRequiredModal from '../components/BusinessRequiredModal';
 import FeaturedListingOption from '../components/FeaturedListingOption';
 import PostingTypeChooser from '../components/PostingTypeChooser';
 import PageTransition from '../components/PageTransition';
+import { MAX_IMAGE_BYTES, isImageFile, isAcceptableImageFile } from '../lib/imageUpload';
 import './AddListingPage.css';
 
 // Category options derived from the taxonomy single source (no drift).
@@ -49,27 +50,6 @@ function clearDraft() {
   } catch {
     /* ignore */
   }
-}
-
-function compressImage(file, maxDim = 1200, quality = 0.82) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = ({ target: { result } }) => {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = result;
-    };
-    reader.readAsDataURL(file);
-  });
 }
 
 export default function AddListingPage() {
@@ -162,11 +142,24 @@ export default function AddListingPage() {
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-    const toAdd = files.slice(0, maxImages - imageFiles.length);
+    if (import.meta.env?.DEV) {
+      console.debug('[AddListing] picked files', files.map(f => ({ name: f.name, type: f.type, bytes: f.size })));
+    }
+    // Reject non-images, empty/unreadable files, and anything over the 5 MB cap
+    // BEFORE they're queued — they'd only be rejected by the server otherwise.
+    const tooBig = files.filter(f => f && f.size > MAX_IMAGE_BYTES);
+    const valid = files.filter(f => isImageFile(f) && f.size <= MAX_IMAGE_BYTES);
+    if (tooBig.length) {
+      setErrors(prev => ({ ...prev, images: 'Each photo must be 5 MB or smaller. Some were skipped.' }));
+    } else if (valid.length < files.length) {
+      setErrors(prev => ({ ...prev, images: 'Some files were skipped — please choose image files only.' }));
+    }
+    if (!valid.length) { e.target.value = ''; return; }
+    const toAdd = valid.slice(0, maxImages - imageFiles.length);
     const newPreviews = toAdd.map(f => URL.createObjectURL(f));
     setImageFiles(prev => [...prev, ...toAdd]);
     setImagePreviews(prev => [...prev, ...newPreviews]);
-    if (errors.images) setErrors(prev => ({ ...prev, images: '' }));
+    if (valid.length === files.length && !tooBig.length && errors.images) setErrors(prev => ({ ...prev, images: '' }));
     e.target.value = '';
   };
 
@@ -218,12 +211,26 @@ export default function AddListingPage() {
       return;
     }
 
+    // Final image guards before sending the real files (multipart upload).
+    const sendFiles = imageFiles.filter(isAcceptableImageFile);
+    if (sendFiles.length < imageFiles.length) {
+      setErrors(prev => ({ ...prev, images: 'One or more photos are invalid or too large (max 5 MB). Please re-select.' }));
+      return;
+    }
+    if (imageConfig?.required && sendFiles.length < (imageConfig.min || 1)) {
+      setErrors(prev => ({ ...prev, images: 'At least one photo is required.' }));
+      return;
+    }
+    if (import.meta.env?.DEV) {
+      console.debug('[AddListing] submit', {
+        uploadMode: 'multipart/original-file',
+        fileCount: sendFiles.length,
+        files: sendFiles.map(f => ({ name: f.name, type: f.type, bytes: f.size })),
+      });
+    }
+
     setSubmitting(true);
     try {
-      const compressedImages = imageFiles.length > 0
-        ? await Promise.all(imageFiles.map(compressImage))
-        : [];
-
       const categoryLabel = CATEGORIES.find(c => c.value === form.category)?.label || '';
       const priceNum = Number(form.price.replace(/[^0-9]/g, ''));
 
@@ -245,8 +252,7 @@ export default function AddListingPage() {
         location:     form.location || 'Malir Cantt',
         condition:    categoryFields.condition || '',
         description:  form.description.trim(),
-        image:        compressedImages[0] || '',
-        images:       compressedImages.length > 0 ? compressedImages : undefined,
+        files:        sendFiles,
         meta:         metaFields,
         details:      categoryFields,
         // Featured is a request only — recorded as pending, never auto-activated.

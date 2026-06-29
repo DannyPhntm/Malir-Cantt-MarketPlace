@@ -3,8 +3,6 @@ import {
   ACCOUNT_TYPES,
   CATEGORIES,
   LISTING_STATUSES,
-  IMAGE_OPTIONAL_CATEGORIES,
-  MIN_IMAGES,
   MAX_IMAGES,
   BUSINESS_TYPES,
   POSTING_TYPES,
@@ -96,64 +94,60 @@ export const confirmEmailChangeSchema = z.object({ newEmail: email, code });
 
 /* ── Listings ────────────────────────────────────────────────────────────────── */
 
-const listingImageInput = z.object({
-  imageUrl: z.string().trim().url('Each image must be a valid URL.'),
-  displayOrder: z.number().int().min(0).optional(),
-});
+// ── Multipart (file-upload) listing schemas ──────────────────────────────────
+// Add/Edit now submit real files via multipart/form-data, so the text fields
+// arrive as strings and images are NOT in the body (they're req.files). These
+// schemas validate just the text fields, coercing the stringified values.
+const jsonObject = (fallback) =>
+  z.preprocess((v) => {
+    if (v == null || v === '') return fallback;
+    if (typeof v === 'object') return v;
+    try { return JSON.parse(v); } catch { return v; } // invalid JSON → let schema reject
+  }, z.record(z.string()));
 
-export const listingCreateSchema = z
+// 'true'/'false' string (or real boolean) → boolean.
+const formBool = z.preprocess((v) => v === true || v === 'true', z.boolean());
+
+export const listingCreateFieldsSchema = z
   .object({
-    // Owner is taken from the auth token; body userId (if sent) is ignored.
-    userId: z.number().int().positive().optional(),
     title: z.string().trim().min(3, 'Title is required.'),
     description: z.string().trim().min(10, 'Description must be at least 10 characters.'),
     category: z.enum(CATEGORIES),
-    subcategory: z.string().trim().optional().nullable(),
+    subcategory: z.preprocess((v) => (v === '' ? null : v), z.string().trim().nullable().optional()),
     postingType: z.enum(POSTING_TYPES).optional().default('personal'),
-    price: z.number().int().nonnegative('Price must be a positive number.'),
-    featuredRequested: z.boolean().optional().default(false),
-    // Category-specific attributes — a flat map of string values.
-    details: z.record(z.string()).optional().default({}),
-    images: z.array(listingImageInput).max(MAX_IMAGES, `A listing can have at most ${MAX_IMAGES} images.`).default([]),
+    price: z.coerce.number().int().nonnegative('Price must be a positive number.'),
+    featuredRequested: formBool.optional().default(false),
+    details: jsonObject({}).optional().default({}),
   })
-  // Image-count rule: >= 1 for every category except jobs/services/other.
   .superRefine((data, ctx) => {
-    const optional = IMAGE_OPTIONAL_CATEGORIES.includes(data.category);
-    if (!optional && data.images.length < MIN_IMAGES) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['images'],
-        message: `At least ${MIN_IMAGES} image is required for ${data.category} listings.`,
-      });
-    }
     if (!isValidSubcategory(data.category, data.subcategory)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['subcategory'],
-        message: 'Subcategory does not belong to the selected category.',
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['subcategory'], message: 'Subcategory does not belong to the selected category.' });
     }
   });
 
-export const listingUpdateSchema = z
-  .object({
-    title: z.string().trim().min(3).optional(),
-    description: z.string().trim().min(10).optional(),
-    price: z.number().int().nonnegative().optional(),
-    featuredRequested: z.boolean().optional(),
-    // Subcategory editable on edit; category itself is not.
-    subcategory: z.string().trim().optional().nullable(),
-    // Category-specific attributes (Edit Listing). Category itself is not editable.
-    details: z.record(z.string()).optional(),
-    // Full image set on edit (add/remove/reorder). Min-count rule is enforced in
-    // the controller (it depends on the category). Base64 data-URLs allowed.
-    images: z.array(listingImageInput).max(MAX_IMAGES, `A listing can have at most ${MAX_IMAGES} images.`).optional(),
-    // Owner lifecycle (mark sold / hide / re-activate) + resubmit a rejected
-    // listing (→ pending). Transition rules enforced in the controller; admins
-    // may set any status via /status.
-    status: z.enum(['pending', 'approved', 'sold', 'hidden']).optional(),
-  })
-  .refine((data) => Object.keys(data).length > 0, { message: 'No fields to update.' });
+// Edit: every text field optional; image set is described by `imagesOrder`
+// (kept existing URLs + placeholders for newly-uploaded files), validated in the controller.
+const imagesOrderItem = z.union([
+  z.object({ kind: z.literal('kept'), url: z.string().trim() }),
+  z.object({ kind: z.literal('new'), idx: z.number().int().nonnegative() }),
+]);
+
+export const listingUpdateFieldsSchema = z.object({
+  title: z.string().trim().min(3).optional(),
+  description: z.string().trim().min(10).optional(),
+  price: z.coerce.number().int().nonnegative().optional(),
+  featuredRequested: formBool.optional(),
+  subcategory: z.preprocess((v) => (v === '' ? null : v), z.string().trim().nullable().optional()),
+  details: jsonObject(undefined).optional(),
+  status: z.enum(['pending', 'approved', 'sold', 'hidden']).optional(),
+  imagesOrder: z
+    .preprocess((v) => {
+      if (v == null || v === '') return undefined;
+      if (Array.isArray(v)) return v;
+      try { return JSON.parse(v); } catch { return v; }
+    }, z.array(imagesOrderItem).max(MAX_IMAGES, `A listing can have at most ${MAX_IMAGES} images.`))
+    .optional(),
+});
 
 // Admin moderation + featured control. Any subset is allowed so a single
 // endpoint can change status and/or toggle the featured request/activation.

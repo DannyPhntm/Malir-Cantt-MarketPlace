@@ -37,7 +37,10 @@ export class ApiError extends Error {
 
 async function request(path, { method = 'GET', body, signal } = {}) {
   const headers = {};
-  if (body != null) headers['Content-Type'] = 'application/json';
+  // FormData (multipart file uploads) must be sent as-is — the browser sets the
+  // Content-Type with the multipart boundary. Only JSON bodies are stringified.
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  if (body != null && !isFormData) headers['Content-Type'] = 'application/json';
   const token = getAuthToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -46,7 +49,7 @@ async function request(path, { method = 'GET', body, signal } = {}) {
     res = await fetch(`${BASE_URL}${path}`, {
       method,
       headers,
-      body: body != null ? JSON.stringify(body) : undefined,
+      body: body != null ? (isFormData ? body : JSON.stringify(body)) : undefined,
       signal,
     });
   } catch {

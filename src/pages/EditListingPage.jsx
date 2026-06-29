@@ -8,34 +8,13 @@ import CategoryFields from '../components/CategoryFields';
 import PageTransition from '../components/PageTransition';
 import LoadingState from '../components/LoadingState';
 import listingsApi from '../services/listingsApi';
+import { MAX_IMAGE_BYTES, isAcceptableImageFile } from '../lib/imageUpload';
 import './AddListingPage.css';
 import './EditListingPage.css';
 
 const CATEGORY_LABEL = Object.fromEntries(
   Object.entries(CATEGORY_CONFIG).map(([slug, cfg]) => [slug, cfg.label]),
 );
-
-// Compress a picked file to a base64 JPEG (same approach as AddListingPage).
-function compressImage(file, maxDim = 1200, quality = 0.82) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = ({ target: { result } }) => {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function EditListingPage() {
   const { id } = useParams();
@@ -66,7 +45,9 @@ export default function EditListingPage() {
         setOriginal(l);
         setForm({ title: l.title || '', price: String(l.priceRaw || ''), description: l.description || '', subcategory: l.subcategory || '' });
         setCategoryFields({ ...(l.details || {}) });
-        setImages([...(l.images || [])].filter(Boolean));
+        // Image model: existing images are { url, file:null }; newly-picked ones
+        // are { url:<objectURL preview>, file:<File> } and uploaded on save.
+        setImages([...(l.images || [])].filter(Boolean).map((url) => ({ url, file: null })));
         setPhase('ready');
       })
       .catch(() => { if (active) setPhase('notfound'); });
@@ -89,17 +70,33 @@ export default function EditListingPage() {
     if (catErrors[name]) setCatErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleImageAdd = async (e) => {
+  const handleImageAdd = (e) => {
     const files = Array.from(e.target.files);
     e.target.value = '';
     if (!files.length) return;
+    if (import.meta.env?.DEV) {
+      console.debug('[EditListing] picked files', files.map((f) => ({ name: f.name, type: f.type, bytes: f.size })));
+    }
+    const tooBig = files.some((f) => f && f.size > MAX_IMAGE_BYTES);
+    const valid = files.filter(isAcceptableImageFile);
+    if (tooBig) {
+      setErrors((prev) => ({ ...prev, images: 'Each photo must be 5 MB or smaller. Some were skipped.' }));
+    } else if (valid.length < files.length) {
+      setErrors((prev) => ({ ...prev, images: 'Some files were skipped — please choose image files only.' }));
+    }
+    if (!valid.length) return;
     const room = maxImages - images.length;
-    const compressed = await Promise.all(files.slice(0, room).map((f) => compressImage(f)));
-    setImages((prev) => [...prev, ...compressed]);
-    if (errors.images) setErrors((prev) => ({ ...prev, images: '' }));
+    const added = valid.slice(0, room).map((file) => ({ url: URL.createObjectURL(file), file }));
+    setImages((prev) => [...prev, ...added]);
+    if (!tooBig && valid.length === files.length && errors.images) setErrors((prev) => ({ ...prev, images: '' }));
   };
 
-  const removeImage = (i) => setImages((prev) => prev.filter((_, idx) => idx !== i));
+  const removeImage = (i) =>
+    setImages((prev) => {
+      const item = prev[i];
+      if (item?.file && item.url?.startsWith('blob:')) URL.revokeObjectURL(item.url);
+      return prev.filter((_, idx) => idx !== i);
+    });
 
   // Reorder by swapping with a neighbour (index 0 is the cover).
   const moveImage = (i, dir) => {
@@ -144,18 +141,39 @@ export default function EditListingPage() {
     setSaving(true);
     setErrors((prev) => ({ ...prev, submit: '' }));
     try {
-      const payload = {
-        title: form.title.trim(),
-        description: form.description.trim(),
-        price: Number(String(form.price).replace(/[^0-9]/g, '')),
-        subcategory: form.subcategory || null,
-        details: categoryFields,
-        images: images.map((url, i) => ({ imageUrl: url, displayOrder: i })),
-      };
-      // Editing a rejected listing resubmits it for review.
-      if (original.status === 'rejected') payload.status = 'pending';
+      // Build the final ordered image set: kept existing URLs + placeholders for
+      // newly-uploaded files. Real files are appended for the multipart upload.
+      const order = [];
+      const newFiles = [];
+      images.forEach((item) => {
+        if (item.file) {
+          order.push({ kind: 'new', idx: newFiles.length });
+          newFiles.push(item.file);
+        } else {
+          order.push({ kind: 'kept', url: item.url });
+        }
+      });
 
-      await listingsApi.update(id, payload);
+      const fd = new FormData();
+      fd.append('title', form.title.trim());
+      fd.append('description', form.description.trim());
+      fd.append('price', String(Number(String(form.price).replace(/[^0-9]/g, ''))));
+      if (form.subcategory) fd.append('subcategory', form.subcategory);
+      fd.append('details', JSON.stringify(categoryFields));
+      fd.append('imagesOrder', JSON.stringify(order));
+      newFiles.forEach((file) => fd.append('images', file));
+      // Editing a rejected listing resubmits it for review.
+      if (original.status === 'rejected') fd.append('status', 'pending');
+
+      if (import.meta.env?.DEV) {
+        console.debug('[EditListing] submit', {
+          uploadMode: 'multipart/original-file',
+          keptCount: order.filter((o) => o.kind === 'kept').length,
+          newFileCount: newFiles.length,
+        });
+      }
+
+      await listingsApi.update(id, fd);
       refresh?.();
       setPhase('saved');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -328,9 +346,9 @@ export default function EditListingPage() {
                   </div>
                 ) : (
                   <div className="form-photo-grid">
-                    {images.map((src, i) => (
+                    {images.map((item, i) => (
                       <div key={i} className="form-photo-thumb">
-                        <img src={src} alt={`Photo ${i + 1}`} />
+                        <img src={item.url} alt={`Photo ${i + 1}`} />
                         {i === 0 && <span className="form-photo-cover">Cover</span>}
                         <div className="edit-photo-reorder">
                           <button type="button" className="edit-photo-move" disabled={i === 0}

@@ -43,22 +43,20 @@ export function ListingsProvider({ children }) {
   const addListing = useCallback(
     async (data) => {
       if (!user?.id) throw new Error('You must be signed in to post a listing.');
-      const images = (data.images && data.images.length ? data.images : [])
-        .filter(Boolean)
-        .map((imageUrl, i) => ({ imageUrl, displayOrder: i }));
 
-      const res = await listingsApi.create({
-        userId: user.id,
-        title: data.title,
-        description: data.description,
-        category: data.categorySlug,
-        subcategory: data.subcategory || null,
-        postingType: data.postingType || 'personal',
-        price: data.priceRaw,
-        featuredRequested: !!data.featuredRequested,
-        details: data.details || {},
-        images,
-      });
+      // Multipart: real File objects are uploaded (no client-side canvas/base64).
+      const fd = new FormData();
+      fd.append('title', data.title || '');
+      fd.append('description', data.description || '');
+      fd.append('category', data.categorySlug || '');
+      if (data.subcategory) fd.append('subcategory', data.subcategory);
+      fd.append('postingType', data.postingType || 'personal');
+      fd.append('price', String(data.priceRaw ?? 0));
+      fd.append('featuredRequested', String(!!data.featuredRequested));
+      fd.append('details', JSON.stringify(data.details || {}));
+      (data.files || []).forEach((file) => fd.append('images', file));
+
+      const res = await listingsApi.create(fd);
       return adaptListing(res.listing);
     },
     [user],
