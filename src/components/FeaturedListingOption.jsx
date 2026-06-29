@@ -62,7 +62,7 @@ export default function FeaturedListingOption({ value, onChange, benefits = FEAT
             <span className="feat-option__star" aria-hidden="true"><StarIcon /></span>
             Featured Listing
           </span>
-          <span className="feat-option__desc">Maximum exposure — subject to approval.</span>
+          <span className="feat-option__desc">Get your listing seen by more residents.</span>
         </label>
       </div>
 
@@ -85,8 +85,9 @@ export default function FeaturedListingOption({ value, onChange, benefits = FEAT
               ))}
             </ul>
             <p className="feat-benefits__note">
-              Featured listings are reviewed before going live. Your request will be marked
-              <strong> Pending Approval</strong> — featured placement is not activated automatically.
+              Featured listings will be a paid option after beta. During beta, selected
+              featured listings may be approved for free. Your request will be reviewed
+              before going live.
             </p>
           </motion.div>
         )}

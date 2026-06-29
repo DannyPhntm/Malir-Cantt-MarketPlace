@@ -124,7 +124,7 @@ export const FEATURED_BENEFITS = [
   'Priority placement',
   'Featured badge',
   'Homepage visibility',
-  'Higher exposure',
+  'More reach inside Malir Cantt',
 ];
 
 /* ──────────────────────────────────────────────────────────────────────────
