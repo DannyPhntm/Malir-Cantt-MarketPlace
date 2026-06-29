@@ -11,6 +11,9 @@ import FeaturedListingOption from '../components/FeaturedListingOption';
 import PostingTypeChooser from '../components/PostingTypeChooser';
 import PageTransition from '../components/PageTransition';
 import { MAX_IMAGE_BYTES, isImageFile, isAcceptableImageFile } from '../lib/imageUpload';
+import listingsApi from '../services/listingsApi';
+import { adaptListings } from '../services/listingAdapter';
+import { computeListingStats } from '../lib/listingStats';
 import './AddListingPage.css';
 
 // Category options derived from the taxonomy single source (no drift).
@@ -81,6 +84,17 @@ export default function AddListingPage() {
   const catConfig = CATEGORY_CONFIG[form.category] || null;
   const imageConfig = catConfig?.images || null;
   const maxImages = imageConfig?.max ?? 10;
+
+  // Best-effort beta-limit usage hint (active = pending + approved listings).
+  const [usage, setUsage] = useState(null);
+  useEffect(() => {
+    let active = true;
+    listingsApi
+      .mine()
+      .then(({ listings }) => { if (active) setUsage(computeListingStats(adaptListings(listings || []))); })
+      .catch(() => { /* hint is optional — never block posting */ });
+    return () => { active = false; };
+  }, []);
 
   // Reset category-specific state whenever category changes — but skip the first
   // run so a restored draft's category fields aren't wiped on mount.
@@ -415,6 +429,13 @@ export default function AddListingPage() {
                       businessStatus={businessStatus}
                       onApply={goApplyBusiness}
                     />
+                  )}
+                  {form.category && usage && (
+                    <p className="form-profile-hint">
+                      {form.postingType === 'business'
+                        ? `You have ${usage.activeBusiness} of 6 active business listings.`
+                        : `You have ${usage.activePersonal} of 2 active personal listings.`}
+                    </p>
                   )}
                 </div>
 

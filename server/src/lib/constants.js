@@ -41,7 +41,18 @@ export const SELLER_STATUSES = ['not_applied', 'pending', 'approved', 'rejected'
 // here; food (cooked-food sale) stays commercial-only.
 export const BUSINESS_ONLY_CATEGORIES = ['food'];
 export const IMAGE_OPTIONAL_CATEGORIES = ['jobs', 'services', 'other'];
-export const MAX_FEATURED_PER_BUSINESS = 2;
+
+// ── Beta listing limits ───────────────────────────────────────────────────────
+// Statuses that occupy a "slot" toward a user's active-listing limit. Pending
+// counts so a user can't spam unlimited listings before admin review. Sold /
+// hidden / rejected free the slot.
+export const ACTIVE_LISTING_STATUSES = ['pending', 'approved'];
+export const MAX_PERSONAL_ACTIVE_LISTINGS = 2;
+export const MAX_BUSINESS_ACTIVE_LISTINGS = 6;
+// Featured slots per business (free during beta — no payment gateway).
+export const MAX_FEATURED_PER_BUSINESS = 3;
+// How long a featured listing stays featured before its slot frees automatically.
+export const FEATURED_DURATION_DAYS = 14;
 
 export const MIN_IMAGES = 1;
 export const MAX_IMAGES = 10;

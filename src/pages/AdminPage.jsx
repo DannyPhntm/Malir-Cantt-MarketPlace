@@ -424,7 +424,11 @@ export default function AdminPage() {
                             <span className={`admin__tag${l.postingType === 'business' ? ' admin__tag--featured' : ''}`}>
                               {l.postingType === 'business' ? 'Business' : 'Personal'}
                             </span>
-                            {l.featured && <span className="admin__tag admin__tag--featured">Featured</span>}
+                            {l.featured && (
+                              <span className="admin__tag admin__tag--featured">
+                                Featured{l.featuredUntil ? ` · until ${new Date(l.featuredUntil).toLocaleDateString()}` : ''}
+                              </span>
+                            )}
                             {l.featuredRequested && !l.featured && <span className="admin__tag admin__tag--featured">Featured requested</span>}
                           </div>
                           <div className="admin__row-meta">

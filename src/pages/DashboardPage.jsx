@@ -329,6 +329,17 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Beta limit usage (active = pending + approved) */}
+                <div className="dash-status" style={{ marginTop: 'var(--space-3)' }}>
+                  <span className="dash-chip">Personal listings {stats.activePersonal}/2</span>
+                  {userType === 'business' && (
+                    <span className="dash-chip">Business listings {stats.activeBusiness}/6</span>
+                  )}
+                  {userType === 'business' && businessStatus === 'approved' && (
+                    <span className="dash-chip">Featured slots {stats.featured}/3</span>
+                  )}
+                </div>
               </>
             )}
           </div>
