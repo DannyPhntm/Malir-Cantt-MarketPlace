@@ -257,6 +257,17 @@
   padding: var(--space-3) var(--space-5) var(--space-5);
   border-top: 1px solid rgba(255, 255, 255, 0.07);
   background: #0d2a1a;
+  /* Fixed panel below the 72px navbar bar so the menu owns its own scroll and
+     fully covers the viewport — the background can't peek through or scroll. */
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-navbar);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* momentum scroll inside the menu on iOS */
+  overscroll-behavior: contain;      /* don't chain scroll to the page */
 }
 
 .navbar__mobile-link {
