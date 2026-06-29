@@ -25,3 +25,12 @@ export const authLimiter = rateLimit({
   limit: 10,
   message: { error: 'Too many attempts. Please wait a few minutes and try again.' },
 });
+
+// Public contact form — unauthenticated and triggers an email, so cap it well
+// below the global limit to stop spam / inbox flooding from a single IP.
+export const contactLimiter = rateLimit({
+  ...base,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 8,
+  message: { error: 'Too many messages from this device. Please try again later.' },
+});

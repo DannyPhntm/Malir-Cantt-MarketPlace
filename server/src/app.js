@@ -20,6 +20,12 @@ const ALLOWED_ORIGINS = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
 export function createApp() {
   const app = express();
 
+  // Behind Railway's proxy the real client IP is in X-Forwarded-For. Trust the
+  // first hop so req.ip (and therefore per-IP rate limiting / brute-force
+  // protection) keys on the actual client, not the shared proxy address.
+  // `1` (not `true`) is the safe, specific value express-rate-limit recommends.
+  app.set('trust proxy', 1);
+
   // Security headers (defaults). API serves JSON only, so allow cross-origin
   // resource sharing of those responses to the configured frontend.
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
