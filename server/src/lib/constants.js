@@ -46,6 +46,15 @@ export const MAX_FEATURED_PER_BUSINESS = 2;
 export const MIN_IMAGES = 1;
 export const MAX_IMAGES = 10;
 
+// Smallest decoded size we'll accept as a plausibly-real photo. A blank/empty
+// canvas export (the iOS Safari large-photo bug) is only a few hundred bytes;
+// real downscaled photos are tens of KB+. Used to reject placeholder uploads
+// both at validation and after the Cloudinary upload returns.
+export const MIN_IMAGE_BYTES = 2048;
+// A base64 data URL is ~4/3 the byte size, plus the `data:image/...;base64,`
+// prefix — the minimum acceptable data-URL string length.
+export const MIN_IMAGE_DATA_URL_LEN = Math.ceil(MIN_IMAGE_BYTES * 4 / 3) + 32;
+
 // ── Shops directory ──────────────────────────────────────────────────────────
 export const SHOP_CATEGORIES = [
   'grocery', 'food-restaurants', 'electronics-mobile', 'clothing-fashion',

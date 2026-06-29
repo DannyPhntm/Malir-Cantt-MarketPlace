@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma.js';
 import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
-import { storeImages } from '../lib/imageStorage.js';
+import { storeImage, storeImageBuffer, storeImageBuffers } from '../lib/imageStorage.js';
 import {
   OWNER_SETTABLE_STATUSES,
   BUSINESS_ONLY_CATEGORIES,
@@ -81,13 +81,28 @@ export const getListing = asyncHandler(async (req, res) => {
   res.json({ listing });
 });
 
-/* POST /api/listings
-   Standard listings go live as 'pending'; featured is never auto-activated
-   (admin flips featuredActive via the status endpoint — mirrors the frontend). */
+/* POST /api/listings  (multipart/form-data)
+   Text fields validated by listingCreateFieldsSchema; images arrive as real files
+   in req.files and are uploaded to Cloudinary BEFORE the listing is created.
+   Standard listings go live as 'pending'; featured is never auto-activated. */
 export const createListing = asyncHandler(async (req, res) => {
   // Owner comes from the authenticated token, never the request body.
   const userId = req.user.id;
-  const { title, description, category, subcategory, price, featuredRequested, details, images } = req.body;
+  const { title, description, category, subcategory, price, featuredRequested, details } = req.body;
+  const files = req.files || [];
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.debug('[createListing] received files', files.map((f) => ({ name: f.originalname, type: f.mimetype, bytes: f.size })));
+  }
+
+  // Image-count rule (depends on category). Multer already capped at MAX_IMAGES.
+  const optional = IMAGE_OPTIONAL_CATEGORIES.includes(category);
+  if (!optional && files.length < MIN_IMAGES) {
+    throw new ApiError(422, `At least ${MIN_IMAGES} image is required for ${category} listings.`);
+  }
+  if (files.length > MAX_IMAGES) {
+    throw new ApiError(422, `A listing can have at most ${MAX_IMAGES} images.`);
+  }
 
   // Posting type: commercial categories (food/services) are always business;
   // otherwise the seller's choice (default personal).
@@ -113,9 +128,9 @@ export const createListing = asyncHandler(async (req, res) => {
     Object.entries(details || {}).filter(([, v]) => v != null && String(v).trim() !== ''),
   );
 
-  // Persist images to object storage (Cloudinary) when configured; otherwise the
-  // data URL is stored as-is (dev fallback). Returns stable { imageUrl, displayOrder }.
-  const storedImages = await storeImages(images);
+  // Upload the real file buffers to Cloudinary (verified non-blank) BEFORE
+  // creating the listing — if any upload fails, no pending listing is created.
+  const storedImages = await storeImageBuffers(files);
 
   const listing = await prisma.listing.create({
     data: {
@@ -156,7 +171,8 @@ async function assertListingOwner(id, reqUser) {
 export const updateListing = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const existing = await assertListingOwner(id, req.user);
-  const { status, details, images, ...rest } = req.body;
+  const { status, details, imagesOrder, ...rest } = req.body;
+  const files = req.files || [];
 
   // Status transitions for a non-admin owner: lifecycle moves from a live state
   // (approved/sold/hidden), plus resubmitting a rejected listing (→ pending).
@@ -180,22 +196,35 @@ export const updateListing = asyncHandler(async (req, res) => {
     data.details = Object.keys(cleaned).length ? JSON.stringify(cleaned) : null;
   }
 
-  // Image set — replace wholesale (covers add / remove / reorder). The min-count
-  // rule depends on the (unchangeable) category, so it's enforced here.
-  if (images !== undefined) {
-    const optional = IMAGE_OPTIONAL_CATEGORIES.includes(existing.category);
-    if (!optional && images.length < MIN_IMAGES) {
+  // Image set — `imagesOrder` describes the final sequence: existing images to
+  // keep (by URL) interleaved with placeholders for newly-uploaded files. The
+  // whole set is replaced (covers add / remove / reorder). Min-count rule depends
+  // on the (unchangeable) category, so it's enforced here.
+  if (imagesOrder !== undefined) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug('[updateListing] received files', files.length, 'order len', imagesOrder.length);
+    }
+    if (!IMAGE_OPTIONAL_CATEGORIES.includes(existing.category) && imagesOrder.length < MIN_IMAGES) {
       throw new ApiError(422, `At least ${MIN_IMAGES} image is required for ${existing.category} listings.`);
     }
-    if (images.length > MAX_IMAGES) {
+    if (imagesOrder.length > MAX_IMAGES) {
       throw new ApiError(422, `A listing can have at most ${MAX_IMAGES} images.`);
     }
-    // New uploads (data URLs) go to object storage; kept images (http URLs) pass through.
-    const storedImages = await storeImages(images);
-    data.images = {
-      deleteMany: {},
-      create: storedImages,
-    };
+
+    // Upload all new files first, then assemble the ordered set.
+    const stored = [];
+    for (let i = 0; i < imagesOrder.length; i++) {
+      const entry = imagesOrder[i];
+      if (entry.kind === 'new') {
+        const file = files[entry.idx];
+        if (!file) throw new ApiError(422, 'Images could not be uploaded. Please try again.');
+        stored.push({ imageUrl: await storeImageBuffer(file), displayOrder: i });
+      } else {
+        // Kept image — pass the existing URL through (validated as http/data).
+        stored.push({ imageUrl: await storeImage(entry.url), displayOrder: i });
+      }
+    }
+    data.images = { deleteMany: {}, create: stored };
   }
 
   const listing = await prisma.listing.update({ where: { id }, data, include: withImages });
