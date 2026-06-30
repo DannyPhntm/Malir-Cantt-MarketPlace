@@ -335,3 +335,13 @@ When AI image generation (Higgsfield) was unavailable, the fallback was curated 
 ### Admin review of verification docs — 2026-06-30
 
 The Admin → Business tab shows each pending applicant's name/email, business name, phone, address, and a **thumbnail + link to the verification document** (and CNIC/NTN when provided) — admin-only. Approve settles payment (`businessVerified=true`); Reject prompts for an optional reason. Added nullable `admin_notes` on `business_accounts` (migration `…_business_admin_notes`) — the admin note / rejection reason, visible to the owner (shown on the apply page when rejected) and admins, **never on public endpoints**. Business verification documents are admin-only and used only to verify authenticity before approval.
+
+## Legal / safety pages (beta) — 2026-07-01
+
+Added plain-language **/terms**, **/privacy**, and **/safety** pages (shared `LegalPage` component + `src/data/legalContent.js`; footer links Terms · Privacy · Safety · Contact). Not formal legal advice — a readable beta baseline before outreach.
+
+Key positions documented for users:
+- The platform is a **connector, not a party to transactions** — no guarantee of quality, authenticity, delivery, payment, or behaviour; users trade at their own risk.
+- **Business verification documents** are collected for **admin review only**, never shown publicly.
+- **Beta payments are not processed by the platform** (no gateway); buyer/seller pay each other directly.
+- Accounts can be blocked/suspended for misuse (reversible).

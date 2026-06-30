@@ -31,6 +31,7 @@ const ManageShopPage = lazy(() => import('./pages/ManageShopPage'));
 const BusinessApplyPage = lazy(() => import('./pages/BusinessApplyPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
+const LegalPage = lazy(() => import('./pages/LegalPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Gate a route behind authentication. Unauthenticated users are sent to the
@@ -91,6 +92,9 @@ export default function App() {
           <Route path="/apply-business"    element={<RequireAuth><BusinessApplyPage /></RequireAuth>} />
           <Route path="/about"             element={<AboutPage />} />
           <Route path="/contact"           element={<ContactPage />} />
+          <Route path="/terms"             element={<LegalPage doc="terms" />} />
+          <Route path="/privacy"           element={<LegalPage doc="privacy" />} />
+          <Route path="/safety"            element={<LegalPage doc="safety" />} />
           <Route path="/admin"             element={<RequireAdmin><AdminPage /></RequireAdmin>} />
           <Route path="*"                  element={<NotFoundPage />} />
         </Routes>

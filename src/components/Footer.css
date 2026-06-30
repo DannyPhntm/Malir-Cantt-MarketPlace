@@ -140,3 +140,18 @@
     padding: var(--space-10) var(--space-5) var(--space-7);
   }
 }
+
+/* Legal links row (bottom) */
+.footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.footer__legal-link {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.78);
+  transition: color var(--duration-fast) var(--ease-default);
+}
+.footer__legal-link:hover { color: #6ecf94; }

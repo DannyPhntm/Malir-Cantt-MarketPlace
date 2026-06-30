@@ -65,6 +65,12 @@ export default function Footer() {
         </div>
 
         <div className="footer__bottom">
+          <nav className="footer__legal" aria-label="Legal">
+            <Link to="/terms" className="footer__legal-link">Terms</Link>
+            <Link to="/privacy" className="footer__legal-link">Privacy</Link>
+            <Link to="/safety" className="footer__legal-link">Safety</Link>
+            <Link to="/contact" className="footer__legal-link">Contact</Link>
+          </nav>
           <p className="footer__copy">© {year} People of Malir Cantt Bazaar. Made for the Malir Cantt community.</p>
           <p className="footer__safety">
             Always meet in a public place and inspect items before paying. Never share OTPs or pay in advance.
