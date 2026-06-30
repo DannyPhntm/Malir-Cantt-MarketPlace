@@ -288,6 +288,18 @@ export default function AddListingPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('Failed to save listing:', err);
+      // Surface backend per-field validation errors inline. `details.<key>`
+      // paths map to category fields; everything else to the main form.
+      if (err?.fields) {
+        const mainErrs = {};
+        const catErrs2 = {};
+        for (const [path, msg] of Object.entries(err.fields)) {
+          if (path.startsWith('details.')) catErrs2[path.slice('details.'.length)] = msg;
+          else mainErrs[path] = msg;
+        }
+        if (Object.keys(catErrs2).length) setCatErrors(prev => ({ ...prev, ...catErrs2 }));
+        if (Object.keys(mainErrs).length) setErrors(prev => ({ ...prev, ...mainErrs }));
+      }
       setErrors(prev => ({ ...prev, submit: err?.message || 'Could not post your listing. Please try again.' }));
       setSubmitting(false);
     }

@@ -15,7 +15,17 @@ export function validate(schema, source = 'body') {
           const key = issue.path.join('.') || '_';
           if (!fields[key]) fields[key] = issue.message;
         }
-        return res.status(422).json({ error: 'Validation failed', fields });
+        // Surface a specific, human-readable message (the first failing field's)
+        // as the top-level error so clients that only render `error` still get
+        // something useful instead of a bare "Validation failed". `fields` keeps
+        // the full per-field map for inline form errors.
+        const firstKey = Object.keys(fields)[0];
+        const message = (firstKey && fields[firstKey]) || 'Validation failed';
+        if (process.env.NODE_ENV !== 'production') {
+          // Dev-only: field PATHS that failed (no values) to speed up diagnosis.
+          console.debug('[validate] failed:', Object.keys(fields).join(', '));
+        }
+        return res.status(422).json({ error: message, fields });
       }
       next(err);
     }
