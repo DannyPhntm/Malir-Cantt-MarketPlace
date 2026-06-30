@@ -45,3 +45,18 @@ Business applications require a verification document photo (bill / receipt / bu
 > Business verification documents are admin-only and used only to verify authenticity before approval. Admins review them in Admin → Business (thumbnail + link); rejection can include a reason shown to the applicant. Never exposed on public pages.
 
 > Legal/safety: /terms, /privacy, /safety pages added (footer-linked). The platform is a connector, not a transaction guarantor; business verification documents are collected for admin review only (never public); beta payments are not processed by the platform.
+
+## Deployment checklist
+
+Run on every deploy so code and database stay in sync (prevents "internal server error" from missing columns):
+
+**Backend (Railway):**
+1. If the change includes a new Prisma migration (`server/prisma/migrations/*`), run **`prisma migrate deploy`** against the production DB **before/with** the deploy. Never let merged code that reads new columns go live before its migration is applied.
+2. `npm install` (picks up new deps), then restart/redeploy.
+3. Confirm env vars are set: `NODE_ENV=production`, `JWT_SECRET`, `DATABASE_URL` + `DIRECT_URL` (Neon), `CLOUDINARY_URL`, `CLIENT_ORIGIN` (apex + www), `RESEND_API_KEY`, `MAIL_FROM`, `CONTACT_TO_EMAIL`.
+4. Quick check: `npx prisma migrate status` should say "Database schema is up to date".
+
+**Frontend (Vercel):**
+1. Redeploy from `main`. Confirm `VITE_API_URL` points at the Railway API.
+
+**Rule of thumb:** a PR that adds a migration is not "done" until `prisma migrate deploy` has run on the live DB.
