@@ -103,17 +103,17 @@ const jsonObject = (fallback) =>
     if (v == null || v === '') return fallback;
     if (typeof v === 'object') return v;
     try { return JSON.parse(v); } catch { return v; } // invalid JSON → let schema reject
-  }, z.record(z.string()));
+  }, z.record(z.string().max(500, 'Detail value is too long.')));
 
 // 'true'/'false' string (or real boolean) → boolean.
 const formBool = z.preprocess((v) => v === true || v === 'true', z.boolean());
 
 export const listingCreateFieldsSchema = z
   .object({
-    title: z.string().trim().min(3, 'Title is required.'),
-    description: z.string().trim().min(10, 'Description must be at least 10 characters.'),
+    title: z.string().trim().min(3, 'Title is required.').max(120, 'Title is too long (max 120 characters).'),
+    description: z.string().trim().min(10, 'Description must be at least 10 characters.').max(5000, 'Description is too long (max 5000 characters).'),
     category: z.enum(CATEGORIES),
-    subcategory: z.preprocess((v) => (v === '' ? null : v), z.string().trim().nullable().optional()),
+    subcategory: z.preprocess((v) => (v === '' ? null : v), z.string().trim().max(60).nullable().optional()),
     postingType: z.enum(POSTING_TYPES).optional().default('personal'),
     price: z.coerce.number().int().nonnegative('Price must be a positive number.'),
     featuredRequested: formBool.optional().default(false),
@@ -133,11 +133,11 @@ const imagesOrderItem = z.union([
 ]);
 
 export const listingUpdateFieldsSchema = z.object({
-  title: z.string().trim().min(3).optional(),
-  description: z.string().trim().min(10).optional(),
+  title: z.string().trim().min(3).max(120).optional(),
+  description: z.string().trim().min(10).max(5000).optional(),
   price: z.coerce.number().int().nonnegative().optional(),
   featuredRequested: formBool.optional(),
-  subcategory: z.preprocess((v) => (v === '' ? null : v), z.string().trim().nullable().optional()),
+  subcategory: z.preprocess((v) => (v === '' ? null : v), z.string().trim().max(60).nullable().optional()),
   details: jsonObject(undefined).optional(),
   status: z.enum(['pending', 'approved', 'sold', 'hidden']).optional(),
   imagesOrder: z
