@@ -288,8 +288,33 @@ export default function AddListingPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('Failed to save listing:', err);
-      setErrors(prev => ({ ...prev, submit: err?.message || 'Could not post your listing. Please try again.' }));
+      // Error display priority:
+      //  1. Field-level validation errors (422 with a `fields` map) → inline per field.
+      //  2. A specific backend top-level message (limit/business/image errors, or
+      //     the first field's message) → form-level alert. Limit errors (409, e.g.
+      //     code PERSONAL_LISTING_LIMIT_REACHED) are NOT field errors — they only
+      //     ever show as the form-level alert.
+      //  3. Generic fallback only when the backend gave no useful message.
+      const hasFields = err?.fields && Object.keys(err.fields).length > 0;
+      if (hasFields) {
+        const mainErrs = {};
+        const catErrs2 = {};
+        for (const [path, msg] of Object.entries(err.fields)) {
+          if (path.startsWith('details.')) catErrs2[path.slice('details.'.length)] = msg;
+          else mainErrs[path] = msg;
+        }
+        if (Object.keys(catErrs2).length) setCatErrors(prev => ({ ...prev, ...catErrs2 }));
+        if (Object.keys(mainErrs).length) setErrors(prev => ({ ...prev, ...mainErrs }));
+      }
+      setErrors(prev => ({
+        ...prev,
+        submit: err?.message || 'Could not post your listing. Please try again.',
+      }));
       setSubmitting(false);
+      // Make sure a form-level error (e.g. a listing-limit block) is seen.
+      if (!hasFields) {
+        document.querySelector('.add-listing__form .form-error[role="alert"]')?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      }
     }
   };
 

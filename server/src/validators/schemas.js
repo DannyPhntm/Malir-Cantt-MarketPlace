@@ -98,12 +98,23 @@ export const confirmEmailChangeSchema = z.object({ newEmail: email, code });
 // Add/Edit now submit real files via multipart/form-data, so the text fields
 // arrive as strings and images are NOT in the body (they're req.files). These
 // schemas validate just the text fields, coercing the stringified values.
+// Detail values are stored as strings (the listing's `details` is a JSON string).
+// Accept string | number | boolean and coerce to string so a numeric/boolean
+// attribute (e.g. year, negotiable) doesn't hard-fail with an opaque error;
+// reject nested objects/arrays which don't belong in the flat attribute map.
+const detailValue = z
+  .union([z.string(), z.number(), z.boolean()], {
+    errorMap: () => ({ message: 'Detail values must be text, numbers, or true/false.' }),
+  })
+  .transform((v) => String(v))
+  .pipe(z.string().max(500, 'Detail value is too long.'));
+
 const jsonObject = (fallback) =>
   z.preprocess((v) => {
     if (v == null || v === '') return fallback;
     if (typeof v === 'object') return v;
     try { return JSON.parse(v); } catch { return v; } // invalid JSON → let schema reject
-  }, z.record(z.string().max(500, 'Detail value is too long.')));
+  }, z.record(detailValue));
 
 // 'true'/'false' string (or real boolean) → boolean.
 const formBool = z.preprocess((v) => v === true || v === 'true', z.boolean());

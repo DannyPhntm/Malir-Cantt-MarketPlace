@@ -56,6 +56,15 @@ export function ListingsProvider({ children }) {
       fd.append('details', JSON.stringify(data.details || {}));
       (data.files || []).forEach((file) => fd.append('images', file));
 
+      if (import.meta.env?.DEV) {
+        // Safe diagnostics: field names + value types only (no values/secrets).
+        const shape = [];
+        for (const [k, v] of fd.entries()) {
+          shape.push(`${k}:${v instanceof File ? `File(${v.size}b)` : typeof v}`);
+        }
+        console.debug('[addListing] multipart fields →', shape.join(', '));
+      }
+
       const res = await listingsApi.create(fd);
       return adaptListing(res.listing);
     },
