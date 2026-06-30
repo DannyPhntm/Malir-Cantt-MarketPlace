@@ -137,6 +137,9 @@ model BusinessAccount {
   cnicDocUrl              String? @map("cnic_doc_url")
   cnicDocPublicId         String? @map("cnic_doc_public_id")
   ntnNumber               String? @map("ntn_number")
+  // Admin's note on the decision — doubles as the rejection reason shown to the
+  // applicant. Visible to the owner + admins only; never on public endpoints.
+  adminNotes              String? @map("admin_notes")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

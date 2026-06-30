@@ -117,7 +117,7 @@ export const getBusinessAccount = asyncHandler(async (req, res) => {
    (paid or waived). No payment gateway — admin waives or marks paid for beta. */
 export const decideBusinessAccount = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
-  const { sellerStatus, paymentStatus } = req.body;
+  const { sellerStatus, paymentStatus, adminNotes } = req.body;
 
   const existing = await prisma.businessAccount.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, 'Business account not found.');
@@ -130,7 +130,11 @@ export const decideBusinessAccount = asyncHandler(async (req, res) => {
   const [account] = await prisma.$transaction([
     prisma.businessAccount.update({
       where: { id },
-      data: { sellerStatus: nextSeller, paymentStatus: nextPayment },
+      data: {
+        sellerStatus: nextSeller,
+        paymentStatus: nextPayment,
+        ...(adminNotes !== undefined ? { adminNotes } : {}),
+      },
     }),
     prisma.user.update({
       where: { id: existing.userId },

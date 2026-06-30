@@ -332,3 +332,6 @@ When AI image generation (Higgsfield) was unavailable, the fallback was curated 
 **Admin UI:** Users tab shows a **Blocked** tag + reason and a **Block/Unblock** button (hidden for admin accounts); block prompts for an optional reason, unblock confirms.
 
 **Notes:** blocking is reversible, does not delete data, and blocked accounts must contact support.
+### Admin review of verification docs — 2026-06-30
+
+The Admin → Business tab shows each pending applicant's name/email, business name, phone, address, and a **thumbnail + link to the verification document** (and CNIC/NTN when provided) — admin-only. Approve settles payment (`businessVerified=true`); Reject prompts for an optional reason. Added nullable `admin_notes` on `business_accounts` (migration `…_business_admin_notes`) — the admin note / rejection reason, visible to the owner (shown on the apply page when rejected) and admins, **never on public endpoints**. Business verification documents are admin-only and used only to verify authenticity before approval.

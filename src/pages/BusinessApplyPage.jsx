@@ -11,7 +11,7 @@ import './BusinessApplyPage.css';
 /* In-app "Apply for a business account" for an already-logged-in user. Upgrades
    the SAME account (userId) — never creates a second login. */
 export default function BusinessApplyPage() {
-  const { isAuthenticated, loading, profile, businessStatus, isApprovedSeller, applyForBusinessSeller } = useAuth();
+  const { isAuthenticated, loading, profile, businessStatus, isApprovedSeller, businessRequest, applyForBusinessSeller } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     businessName: profile?.businessName || '',
@@ -118,7 +118,10 @@ export default function BusinessApplyPage() {
 
           {businessStatus === 'rejected' && (
             <div className="bizapply__rejected">
-              Your previous application was not approved. You can update your details and reapply, or contact support.
+              Your business application was not approved. Please contact support or submit clearer verification proof.
+              {businessRequest?.adminNotes && (
+                <span className="bizapply__reject-reason"> Reason: {businessRequest.adminNotes}</span>
+              )}
             </div>
           )}
 

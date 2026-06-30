@@ -220,6 +220,8 @@ export const businessDecisionSchema = z
   .object({
     sellerStatus: z.enum(SELLER_STATUSES).optional(),
     paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
+    // Admin note / rejection reason (optional). Shown to the applicant.
+    adminNotes: optionalText(1000),
   })
   .refine((d) => d.sellerStatus || d.paymentStatus, {
     message: 'Provide sellerStatus and/or paymentStatus.',
