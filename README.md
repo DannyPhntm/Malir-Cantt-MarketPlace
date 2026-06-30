@@ -36,3 +36,7 @@ Create a modern, trusted platform where residents can buy and sell items within 
 npm install
 npm run dev
 ```
+
+## Business verification (beta)
+
+Business applications require a verification document photo (bill / receipt / business card / rent proof / anything showing the business name or address) plus business address and phone. CNIC photo and NTN are optional during beta. Verification documents are uploaded to Cloudinary (`malir/business-verification`) and are **admin-only** — never exposed on public pages.

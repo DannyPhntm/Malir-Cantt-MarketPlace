@@ -298,3 +298,20 @@ Max 2 concurrent `featuredActive` listings per business, checked in the admin st
 
 ### Real photography over AI for category tiles
 When AI image generation (Higgsfield) was unavailable, the fallback was curated real stock photos rather than blocking. For a trust-first local marketplace, recognisable real photography is on-brand and arguably the better default — AI tiles often read as synthetic. The image config is a swappable slug→URL map, so any source (local, stock, or AI later) drops in without code changes.
+
+---
+
+## Business authenticity verification (beta) — 2026-06-30
+
+**Decision:** Applying for a Business Seller account now requires a **verification document photo** (bill / receipt / business card / rent or lease proof / anything showing the business name or address), plus **business address** and **business phone/WhatsApp**. CNIC photo and NTN/registration number are **optional** for beta.
+
+**Why:** We will visit businesses in person to invite them to beta; admins need evidence a business is real and tied to the listed address/contact before approving.
+
+**How:**
+- New nullable fields on `business_accounts`: `business_address`, `business_phone`, `verification_doc_url`, `verification_doc_public_id`, `verification_doc_label`, `cnic_doc_url`, `cnic_doc_public_id`, `ntn_number` (additive migration `20260630202053_business_verification`).
+- `POST /api/business-accounts` is now multipart/form-data: required `verificationDoc` file (+ optional `cnicDoc`), uploaded to Cloudinary folder `malir/business-verification` via `storeImageBufferDetailed` (returns `{url, publicId}`, verifies bytes/dimensions, destroys bad uploads). Image-only, ≤5 MB, empty rejected; no base64 stored in DB.
+- `POST /api/business-accounts/apply` (sets status `pending`) refuses if no `verification_doc_url` on file — closes the bypass.
+
+**Privacy (admin-only):** Verification/CNIC/NTN are **never** returned by public endpoints — the seller (`listings`) and shop selects use explicit field lists that omit them. `GET /business-accounts/:id` is owner-or-admin and strips the private doc fields for non-admins. Admin list/queue returns them (admin-gated). Public business/shop/seller pages must never expose verification documents.
+
+**Beta scope:** No NTN/CNIC requirement; payment still waived by admin on approval (unchanged).

@@ -427,3 +427,8 @@ a.admin__row-title:hover {
     justify-content: flex-end;
   }
 }
+
+/* Admin-only verification document link */
+.admin__row-doclink { color: var(--color-primary); font-size: var(--text-sm); font-weight: var(--fw-semibold); }
+.admin__row-doclink:hover { text-decoration: underline; }
+.admin__row-warn { color: var(--color-danger); font-size: var(--text-sm); }

@@ -526,10 +526,35 @@ export default function AdminPage() {
                             <span>{b.user?.name}</span>
                             <span className="admin__row-dot" aria-hidden="true" />
                             <span>{b.user?.email}</span>
-                            {b.user?.residentLocation && (
+                            {b.businessPhone && (
                               <>
                                 <span className="admin__row-dot" aria-hidden="true" />
-                                <span>{b.user.residentLocation}</span>
+                                <span>{b.businessPhone}</span>
+                              </>
+                            )}
+                          </div>
+                          {b.businessAddress && (
+                            <div className="admin__row-meta"><span>{b.businessAddress}</span></div>
+                          )}
+                          {/* Admin-only verification documents */}
+                          <div className="admin__row-meta">
+                            {b.verificationDocUrl ? (
+                              <a href={b.verificationDocUrl} target="_blank" rel="noopener noreferrer" className="admin__row-doclink">
+                                View verification document ↗
+                              </a>
+                            ) : (
+                              <span className="admin__row-warn">No verification document</span>
+                            )}
+                            {b.cnicDocUrl && (
+                              <>
+                                <span className="admin__row-dot" aria-hidden="true" />
+                                <a href={b.cnicDocUrl} target="_blank" rel="noopener noreferrer" className="admin__row-doclink">CNIC ↗</a>
+                              </>
+                            )}
+                            {b.ntnNumber && (
+                              <>
+                                <span className="admin__row-dot" aria-hidden="true" />
+                                <span>NTN: {b.ntnNumber}</span>
                               </>
                             )}
                           </div>

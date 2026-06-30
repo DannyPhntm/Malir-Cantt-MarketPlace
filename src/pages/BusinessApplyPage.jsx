@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageTransition from '../components/PageTransition';
 import LoadingState from '../components/LoadingState';
 import BusinessBenefitsCard from '../components/BusinessBenefitsCard';
 import { useAuth } from '../context/AuthContext';
 import { BUSINESS_TYPE_OPTIONS } from '../data/businessTypes';
+import { MAX_IMAGE_BYTES, isAcceptableImageFile, isImageFile } from '../lib/imageUpload';
 import './BusinessApplyPage.css';
 
 /* In-app "Apply for a business account" for an already-logged-in user. Upgrades
@@ -12,9 +13,29 @@ import './BusinessApplyPage.css';
 export default function BusinessApplyPage() {
   const { isAuthenticated, loading, profile, businessStatus, isApprovedSeller, applyForBusinessSeller } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ businessName: profile?.businessName || '', businessType: '' });
+  const [form, setForm] = useState({
+    businessName: profile?.businessName || '',
+    businessType: '',
+    businessAddress: '',
+    businessPhone: profile?.phone || '',
+    ntnNumber: '',
+  });
+  const [verificationFile, setVerificationFile] = useState(null);
+  const [cnicFile, setCnicFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const verifInputRef = useRef(null);
+  const cnicInputRef = useRef(null);
+
+  const pickFile = (setter, field) => (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!isImageFile(file)) { setErrors((p) => ({ ...p, [field]: 'Please choose an image file.' })); return; }
+    if (file.size > MAX_IMAGE_BYTES) { setErrors((p) => ({ ...p, [field]: 'Image must be 5 MB or smaller.' })); return; }
+    setter(file);
+    setErrors((p) => ({ ...p, [field]: '' }));
+  };
 
   if (loading) {
     return <PageTransition><main className="bizapply"><LoadingState label="Loading…" /></main></PageTransition>;
@@ -32,10 +53,24 @@ export default function BusinessApplyPage() {
     const errs = {};
     if (!form.businessName.trim()) errs.businessName = 'Business name is required.';
     if (!form.businessType) errs.businessType = 'Pick a business type.';
+    if (form.businessAddress.trim().length < 5) errs.businessAddress = 'Business address is required.';
+    if (!/^0\d{3}-?\d{7}$/.test(form.businessPhone.trim())) errs.businessPhone = 'Enter a valid phone (03XX-XXXXXXX).';
+    if (!verificationFile) errs.verificationDoc = 'A verification document photo is required.';
+    else if (!isAcceptableImageFile(verificationFile)) errs.verificationDoc = 'Document must be an image, 5 MB or smaller.';
+    if (cnicFile && !isAcceptableImageFile(cnicFile)) errs.cnicDoc = 'CNIC photo must be an image, 5 MB or smaller.';
     if (Object.keys(errs).length) { setErrors(errs); return; }
+
     setSubmitting(true); setErrors({});
     try {
-      await applyForBusinessSeller({ businessName: form.businessName.trim(), businessType: form.businessType });
+      const fd = new FormData();
+      fd.append('businessName', form.businessName.trim());
+      fd.append('businessType', form.businessType);
+      fd.append('businessAddress', form.businessAddress.trim());
+      fd.append('businessPhone', form.businessPhone.trim());
+      if (form.ntnNumber.trim()) fd.append('ntnNumber', form.ntnNumber.trim());
+      fd.append('verificationDoc', verificationFile);
+      if (cnicFile) fd.append('cnicDoc', cnicFile);
+      await applyForBusinessSeller(fd);
     } catch (err) {
       setErrors({ _general: err?.message || 'Could not submit your application. Please try again.' });
     } finally { setSubmitting(false); }
@@ -106,6 +141,54 @@ export default function BusinessApplyPage() {
               </div>
               {errors.businessType && <p className="form-error" role="alert">{errors.businessType}</p>}
             </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="ba-address">Business address <span className="form-required">*</span></label>
+              <input id="ba-address" name="businessAddress" className={`form-input${errors.businessAddress ? ' form-input--error' : ''}`}
+                value={form.businessAddress} onChange={change} placeholder="Shop #, street / market, Malir Cantt sector" />
+              {errors.businessAddress && <p className="form-error" role="alert">{errors.businessAddress}</p>}
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="ba-phone">Business phone / WhatsApp <span className="form-required">*</span></label>
+              <input id="ba-phone" name="businessPhone" className={`form-input${errors.businessPhone ? ' form-input--error' : ''}`}
+                value={form.businessPhone} onChange={change} placeholder="03XX-XXXXXXX" inputMode="tel" />
+              {errors.businessPhone && <p className="form-error" role="alert">{errors.businessPhone}</p>}
+            </div>
+
+            {/* Business verification — admin-only documents */}
+            <div className="bizapply__verify">
+              <h2 className="bizapply__verify-title">Business verification</h2>
+              <p className="bizapply__verify-text">
+                To keep the marketplace trusted, upload a photo of a bill, receipt, business card, rent
+                document, or anything showing your business name/address. This is only visible to admins.
+              </p>
+
+              <div className="form-group">
+                <label className="form-label">Verification document <span className="form-required">*</span></label>
+                <input ref={verifInputRef} type="file" accept="image/*" hidden onChange={pickFile(setVerificationFile, 'verificationDoc')} />
+                <button type="button" className="bizapply__btn bizapply__btn--ghost" onClick={() => verifInputRef.current?.click()}>
+                  {verificationFile ? 'Change document' : 'Upload document'}
+                </button>
+                {verificationFile && <span className="bizapply__file-name">{verificationFile.name}</span>}
+                {errors.verificationDoc && <p className="form-error" role="alert">{errors.verificationDoc}</p>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Owner CNIC photo <span className="bizapply__optional">(optional)</span></label>
+                <input ref={cnicInputRef} type="file" accept="image/*" hidden onChange={pickFile(setCnicFile, 'cnicDoc')} />
+                <button type="button" className="bizapply__btn bizapply__btn--ghost" onClick={() => cnicInputRef.current?.click()}>
+                  {cnicFile ? 'Change CNIC photo' : 'Upload CNIC photo'}
+                </button>
+                {cnicFile && <span className="bizapply__file-name">{cnicFile.name}</span>}
+                {errors.cnicDoc && <p className="form-error" role="alert">{errors.cnicDoc}</p>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="ba-ntn">NTN / registration number <span className="bizapply__optional">(optional)</span></label>
+                <input id="ba-ntn" name="ntnNumber" className="form-input" value={form.ntnNumber} onChange={change} placeholder="If you have one" />
+              </div>
+            </div>
+
             {errors._general && <p className="form-error" role="alert">{errors._general}</p>}
             <button type="submit" className="bizapply__btn" disabled={submitting}>
               {submitting ? 'Submitting…' : 'Apply for business access'}

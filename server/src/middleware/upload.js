@@ -19,20 +19,36 @@ const upload = multer({
   },
 });
 
+// Map a Multer error to a clean ApiError (avoids a raw 500).
+function multerError(err, sizeMsg) {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') return new ApiError(422, sizeMsg);
+    if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return new ApiError(422, 'Too many files uploaded.');
+    }
+    return new ApiError(422, 'Upload failed. Please try again.');
+  }
+  return err;
+}
+
 // `images` is the multipart field name used by both Add and Edit. Wrapped so
 // Multer's own errors become clean ApiErrors instead of a 500.
 export function uploadListingImages(req, res, next) {
   upload.array('images', MAX_IMAGES)(req, res, (err) => {
     if (!err) return next();
-    if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return next(new ApiError(422, 'Each image must be 5 MB or smaller.'));
-      }
-      if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE') {
-        return next(new ApiError(422, `You can upload at most ${MAX_IMAGES} images.`));
-      }
-      return next(new ApiError(422, 'Images could not be uploaded. Please try again.'));
-    }
-    next(err);
+    next(multerError(err, 'Each image must be 5 MB or smaller.'));
+  });
+}
+
+// Business-application documents: one required verification doc + optional CNIC
+// photo (both images, ≤5 MB). Image-only / size are enforced by the shared
+// multer instance; required/empty checks happen in the controller.
+export function uploadBusinessDocs(req, res, next) {
+  upload.fields([
+    { name: 'verificationDoc', maxCount: 1 },
+    { name: 'cnicDoc', maxCount: 1 },
+  ])(req, res, (err) => {
+    if (!err) return next();
+    next(multerError(err, 'Each document must be 5 MB or smaller.'));
   });
 }

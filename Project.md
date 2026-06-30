@@ -192,3 +192,14 @@ When generating code:
 * Preserve mobile responsiveness.
 * Avoid redesigning existing sections unless specifically requested.
 * Explain major architectural decisions before implementing large changes.
+
+---
+
+## Business verification (beta)
+
+Applying for a business account requires proof the business is real:
+
+- **Required:** business name, business type, business address, business phone/WhatsApp, and **one verification document photo** (bill, receipt, business card, rent/lease proof, or anything showing the business name/address).
+- **Optional (beta):** owner CNIC photo, NTN / registration number.
+- Verification documents are **admin-only** — they are never shown on public business, shop, or seller pages.
+- Admins review the document before approving a business; approval (with payment waived for beta) unlocks shop management and business listings.

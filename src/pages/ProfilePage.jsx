@@ -505,15 +505,7 @@ const BLANK_BUSINESS = { businessName: '', businessCategory: '', businessArea: '
 const FEATURED_CAP = 2;
 
 export default function ProfilePage() {
-  const { profile, updateProfile, userType, businessStatus, sellerStatus, applyForBusinessSeller } = useAuth();
-  const [applyingSeller, setApplyingSeller] = useState(false);
-  const [applyError, setApplyError] = useState('');
-  const handleApplySeller = async () => {
-    setApplyingSeller(true); setApplyError('');
-    try { await applyForBusinessSeller(); }
-    catch (e) { setApplyError(e?.message || 'Could not submit your application.'); }
-    finally { setApplyingSeller(false); }
-  };
+  const { profile, updateProfile, userType, businessStatus, sellerStatus } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [saved,     setSaved]     = useState(false);
@@ -776,12 +768,10 @@ export default function ProfilePage() {
                   </div>
                   {(sellerStatus === 'not_applied' || sellerStatus === 'rejected') && (
                     <div className="prf-account-row">
-                      <button type="button" className="prf-save-btn" onClick={handleApplySeller} disabled={applyingSeller}>
-                        {applyingSeller ? 'Submitting…' : 'Apply for Business Seller'}
-                      </button>
+                      {/* Verification docs are collected on the apply page. */}
+                      <Link to="/apply-business" className="prf-save-btn">Apply for Business Seller</Link>
                     </div>
                   )}
-                  {applyError && <p className="prf-field__error" role="alert">{applyError}</p>}
                 </div>
               </SectionCard>
             </motion.div>
