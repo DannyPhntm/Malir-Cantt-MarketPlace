@@ -93,6 +93,13 @@ export function adaptListing(listing) {
   const location = listing.user?.residentLocation || 'Malir Cantt';
   const details = parseDetails(listing.details);
 
+  // A listing is "featured" only while its flag is on AND the window is unexpired
+  // — mirrors the backend so expired featured listings stop showing as featured.
+  const featuredNow =
+    !!listing.featuredActive &&
+    !!listing.featuredUntil &&
+    new Date(listing.featuredUntil).getTime() > Date.now();
+
   return {
     id: listing.id,
     // Owner id — lets the UI gate edit/manage controls to the owner.
@@ -118,7 +125,7 @@ export function adaptListing(listing) {
     priceRaw: Number(listing.price) || 0,
     image: images[0] || '',
     images,
-    featured: !!listing.featuredActive,
+    featured: featuredNow,
     featuredRequested: !!listing.featuredRequested,
     status: listing.status,
     location,

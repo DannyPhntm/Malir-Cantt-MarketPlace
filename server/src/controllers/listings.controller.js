@@ -5,10 +5,14 @@ import {
   OWNER_SETTABLE_STATUSES,
   BUSINESS_ONLY_CATEGORIES,
   IMAGE_OPTIONAL_CATEGORIES,
+  ACTIVE_LISTING_STATUSES,
   MIN_IMAGES,
   MAX_IMAGES,
+  MAX_PERSONAL_ACTIVE_LISTINGS,
+  MAX_BUSINESS_ACTIVE_LISTINGS,
   MAX_FEATURED_PER_BUSINESS,
 } from '../lib/constants.js';
+import { featuredUntilFromNow } from '../lib/featured.js';
 
 const withImages = {
   images: { orderBy: { displayOrder: 'asc' } },
@@ -39,7 +43,13 @@ export const listListings = asyncHandler(async (req, res) => {
   if (postingType) where.postingType = postingType;
   if (status) where.status = status;
   if (userId) where.userId = userId;
-  if (featured !== undefined) where.featuredActive = featured;
+  if (featured === true) {
+    // "Featured" means the flag is on AND the window hasn't expired.
+    where.featuredActive = true;
+    where.featuredUntil = { gt: new Date() };
+  } else if (featured === false) {
+    where.featuredActive = false;
+  }
   if (featuredRequested !== undefined) where.featuredRequested = featuredRequested;
 
   const listings = await prisma.listing.findMany({
@@ -121,6 +131,21 @@ export const createListing = asyncHandler(async (req, res) => {
     }
     const shop = await prisma.shop.findUnique({ where: { userId }, select: { id: true } });
     shopId = shop?.id ?? null;
+  }
+
+  // Beta active-listing limit (per posting type). Pending + approved occupy a
+  // slot; sold/hidden/rejected free it. Admins are exempt. Counted with Prisma.
+  if (req.user.role !== 'admin') {
+    const activeCount = await prisma.listing.count({
+      where: { userId, postingType, status: { in: ACTIVE_LISTING_STATUSES } },
+    });
+    if (postingType === 'business') {
+      if (activeCount >= MAX_BUSINESS_ACTIVE_LISTINGS) {
+        throw new ApiError(409, `You've reached your beta limit of ${MAX_BUSINESS_ACTIVE_LISTINGS} active business listings. Mark one inactive or contact support for more visibility.`);
+      }
+    } else if (activeCount >= MAX_PERSONAL_ACTIVE_LISTINGS) {
+      throw new ApiError(409, `You already have ${MAX_PERSONAL_ACTIVE_LISTINGS} active personal listings. Mark one as sold or inactive before posting another.`);
+    }
   }
 
   // Drop empty values, then store the attribute map as JSON.
@@ -240,23 +265,32 @@ export const setListingStatus = asyncHandler(async (req, res) => {
   const { status, featuredActive, featuredRequested } = req.body;
   const data = {};
   if (status !== undefined) data.status = status;
-  if (featuredActive !== undefined) data.featuredActive = featuredActive;
   if (featuredRequested !== undefined) data.featuredRequested = featuredRequested;
 
-  // Featured cap: a business may have at most MAX_FEATURED_PER_BUSINESS active
-  // featured listings at once. Only check when newly activating featured.
   if (featuredActive === true) {
+    // Only business listings can be featured.
     const target = await prisma.listing.findUnique({
-      where: { id }, select: { userId: true, featuredActive: true },
+      where: { id }, select: { userId: true, postingType: true },
     });
-    if (target && !target.featuredActive) {
-      const count = await prisma.listing.count({
-        where: { userId: target.userId, featuredActive: true },
-      });
-      if (count >= MAX_FEATURED_PER_BUSINESS) {
-        throw new ApiError(409, `This business already has ${MAX_FEATURED_PER_BUSINESS} featured listings. Unfeature one first.`);
-      }
+    if (!target) throw new ApiError(404, 'Listing not found.');
+    if (target.postingType !== 'business') {
+      throw new ApiError(422, 'Only business listings can be featured.');
     }
+    // Featured-slot cap: count this owner's listings that are featured AND not
+    // expired (featuredUntil > now), excluding this listing. Expired slots free
+    // automatically. Beta: MAX_FEATURED_PER_BUSINESS, no payment.
+    const now = new Date();
+    const count = await prisma.listing.count({
+      where: { userId: target.userId, featuredActive: true, featuredUntil: { gt: now }, id: { not: id } },
+    });
+    if (count >= MAX_FEATURED_PER_BUSINESS) {
+      throw new ApiError(409, `You've used your ${MAX_FEATURED_PER_BUSINESS} beta featured slots. Remove or wait for one to expire, or contact support for more visibility.`);
+    }
+    data.featuredActive = true;
+    data.featuredUntil = featuredUntilFromNow(now); // 14-day beta window
+  } else if (featuredActive === false) {
+    data.featuredActive = false;
+    data.featuredUntil = null; // freeing the slot
   }
 
   const listing = await prisma.listing.update({ where: { id }, data, include: withImages });
