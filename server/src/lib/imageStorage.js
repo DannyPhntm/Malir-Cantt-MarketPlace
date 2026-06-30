@@ -124,6 +124,36 @@ export async function storeImageBuffer(file, { folder = 'listings' } = {}) {
   });
 }
 
+/**
+ * Like storeImageBuffer but returns both the URL and the Cloudinary public_id
+ * (needed for private documents we may later destroy/manage). Dev fallback
+ * returns a base64 data URL with publicId: null.
+ */
+export async function storeImageBufferDetailed(file, { folder = 'listings' } = {}) {
+  if (!file?.buffer?.length) throw new ApiError(422, UPLOAD_FAILED);
+
+  if (!CLOUDINARY_ENABLED) {
+    const mime = file.mimetype || 'image/jpeg';
+    return { url: `data:${mime};base64,${file.buffer.toString('base64')}`, publicId: null };
+  }
+
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: `malir/${folder}`, resource_type: 'image' },
+      async (err, res) => {
+        if (err) return reject(new ApiError(422, UPLOAD_FAILED));
+        try {
+          await assertCloudinaryResultOk(res);
+          resolve({ url: res.secure_url, publicId: res.public_id });
+        } catch (e) {
+          reject(e);
+        }
+      },
+    );
+    stream.end(file.buffer);
+  });
+}
+
 /** Upload an ordered array of Multer files; returns [{ imageUrl, displayOrder }]. */
 export async function storeImageBuffers(files = [], opts = {}) {
   return Promise.all(

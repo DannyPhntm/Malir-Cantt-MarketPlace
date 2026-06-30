@@ -118,6 +118,21 @@ model BusinessAccount {
   sellerStatus  String  @default("not_applied") @map("seller_status")
   paymentStatus String  @default("payment_required") @map("payment_status")
 
+  // ── Business authenticity (beta) ─────────────────────────────────────────
+  // Collected at apply time so admins can verify the business is real before
+  // approval. The document URLs are PRIVATE — admin-only; never returned by the
+  // public seller/shop endpoints (those use explicit field selects).
+  businessAddress         String? @map("business_address")
+  businessPhone           String? @map("business_phone")
+  // Required proof of business (bill / receipt / business card / lease …).
+  verificationDocUrl      String? @map("verification_doc_url")
+  verificationDocPublicId String? @map("verification_doc_public_id")
+  verificationDocLabel    String? @map("verification_doc_label")
+  // Optional during beta — owner CNIC photo + NTN / registration number.
+  cnicDocUrl              String? @map("cnic_doc_url")
+  cnicDocPublicId         String? @map("cnic_doc_public_id")
+  ntnNumber               String? @map("ntn_number")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("business_accounts")

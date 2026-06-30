@@ -188,8 +188,11 @@ export function AuthProvider({ children }) {
   // { businessName, businessType }: we create the business account, then apply
   // → sellerStatus 'pending'. Existing-account users can call with no args.
   // Refreshes the session so the new status is reflected everywhere.
-  const applyForBusinessSeller = useCallback(async ({ businessName, businessType } = {}) => {
-    if (businessName) await authApi.applyForBusiness({ businessName, businessType: businessType || null });
+  // Pass a FormData (business details + required verification document) to submit
+  // a fresh application; call with no args to re-apply on an account that already
+  // has its verification document on file (e.g. after a rejection).
+  const applyForBusinessSeller = useCallback(async (formData) => {
+    if (formData) await authApi.applyForBusiness(formData);
     const res = await authApi.applyForSeller();
     const me = await authApi.me();
     setUser(me.user);

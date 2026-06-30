@@ -29,8 +29,9 @@ export const authApi = {
     apiClient.post('/auth/confirm-email-change', { newEmail, code }),
 
   // Create/update the caller's business account (links to userId — never a new
-  // login). payload: { businessName, businessType? }
-  applyForBusiness: (payload) => apiClient.post('/business-accounts', payload),
+  // login). Multipart FormData carrying business details + the required
+  // verification document (and optional CNIC). Sent as-is by apiClient.
+  applyForBusiness: (formData) => apiClient.post('/business-accounts', formData),
 
   // Business account applies for Business Seller status (-> pending).
   applyForSeller: () => apiClient.post('/business-accounts/apply', {}),

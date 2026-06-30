@@ -523,3 +523,11 @@ Single source of truth for monetisation / verification / admin-approval constant
 - **Private listings are 404 to the public** (Phase 5.2.5): `GET /listings/:id` uses `optionalAuth`; `pending`/`hidden`/`rejected` listings return **404** (not 403, to avoid revealing existence) unless the requester is the owner or an admin. `approved`/`sold` stay public. The public feed (`?status=approved`) already excludes them.
 - **Saved listings are server-side for authed users** (Phase 5.2.5): `saved_listings` join table + `/api/saved` CRUD; `FavoritesContext` is optimistic with rollback and merges guest `localStorage` favourites into the account on login. Same `useFavorites` interface, so Navbar/cards/drawer/page are unchanged.
 - **Imageless cards never show empty boxes** (Phase 4.4.5): Jobs/Services (image-optional) without a photo render a branded `ListingPlaceholder` in the same 4:3 slot. Same DOM structure as a photo card → identical heights, grid alignment, hover, and badge overlay; the type pill reuses data the card already carries (`condition`/`serviceType`) rather than duplicating the body's title/price.
+
+---
+
+## Business Verification (beta) — security note
+
+- Business-account applications (`POST /api/business-accounts`, multipart) require a **verification document photo** (+ business address & phone); CNIC photo and NTN are optional. `POST /api/business-accounts/apply` refuses without a verification doc on file.
+- Docs go to Cloudinary `malir/business-verification` via `storeImageBufferDetailed` (image-only, ≤5 MB, verified, `{url, publicId}` stored — no base64 in DB).
+- **Verification/CNIC/NTN are admin-only.** Public seller (`listings` `sellerSelect`) and shop (`ownerSelect`) queries use explicit field lists that exclude them; `GET /business-accounts/:id` is owner-or-admin and strips doc fields for non-admins. **Never add verification fields to any public/business/shop/seller response.**

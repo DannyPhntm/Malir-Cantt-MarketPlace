@@ -189,11 +189,18 @@ export const listingQuerySchema = z.object({
 
 /* ── Business accounts ───────────────────────────────────────────────────────── */
 
+// Submitted as multipart/form-data (carries the verification document file), so
+// optional text fields may arrive as '' — normalise those to undefined. The
+// required verification document itself is a file, validated in the controller.
+const optionalText = (max) =>
+  z.preprocess((v) => (v == null || v === '' ? undefined : v), z.string().trim().max(max).optional());
+
 export const businessApplySchema = z.object({
-  // Owner is taken from the auth token.
-  userId: z.number().int().positive().optional(),
-  businessName: z.string().trim().min(2, 'Business name is required.'),
-  businessType: z.string().trim().max(60).optional().nullable(),
+  businessName: z.string().trim().min(2, 'Business name is required.').max(120),
+  businessType: optionalText(60),
+  businessAddress: z.string().trim().min(5, 'Business address is required.').max(300),
+  businessPhone: phone, // reused 03XX-XXXXXXX validation
+  ntnNumber: optionalText(40), // NTN / registration number — optional for beta
 });
 
 /* ── Saved listings ──────────────────────────────────────────────────────────── */
