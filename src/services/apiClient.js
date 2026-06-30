@@ -24,11 +24,14 @@ export function getAuthToken() {
  * inline errors without redesign.
  */
 export class ApiError extends Error {
-  constructor(message, { status, fields, unverified } = {}) {
+  constructor(message, { status, fields, unverified, code } = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.fields = fields || null;
+    // Machine-readable error code (e.g. PERSONAL_LISTING_LIMIT_REACHED) when the
+    // server sends one, so the UI can branch without string-matching the message.
+    this.code = code || null;
     // True when the server reports an existing-but-unverified account, so the
     // UI can route the user to the resend-verification flow.
     this.unverified = unverified || false;
@@ -72,6 +75,7 @@ async function request(path, { method = 'GET', body, signal } = {}) {
       status: res.status,
       fields: data?.fields,
       unverified: data?.unverified,
+      code: data?.code,
     });
   }
 

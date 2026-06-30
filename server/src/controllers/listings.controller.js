@@ -127,7 +127,7 @@ export const createListing = asyncHandler(async (req, res) => {
     const settled = account && (account.paymentStatus === 'paid' || account.paymentStatus === 'waived');
     const active = account && account.sellerStatus === 'approved' && settled;
     if (!active) {
-      throw new ApiError(403, 'Business selling requires an approved Business Seller account. Apply for Business Seller status to post commercial listings.');
+      throw new ApiError(403, 'Business selling requires an approved Business Seller account. Apply for Business Seller status to post commercial listings.', { code: 'BUSINESS_ACCOUNT_REQUIRED' });
     }
     const shop = await prisma.shop.findUnique({ where: { userId }, select: { id: true } });
     shopId = shop?.id ?? null;
@@ -141,10 +141,10 @@ export const createListing = asyncHandler(async (req, res) => {
     });
     if (postingType === 'business') {
       if (activeCount >= MAX_BUSINESS_ACTIVE_LISTINGS) {
-        throw new ApiError(409, `You've reached your beta limit of ${MAX_BUSINESS_ACTIVE_LISTINGS} active business listings. Mark one inactive or contact support for more visibility.`);
+        throw new ApiError(409, `You've reached your beta limit of ${MAX_BUSINESS_ACTIVE_LISTINGS} active business listings. Mark one inactive or contact support for more visibility.`, { code: 'BUSINESS_LISTING_LIMIT_REACHED' });
       }
     } else if (activeCount >= MAX_PERSONAL_ACTIVE_LISTINGS) {
-      throw new ApiError(409, `You already have ${MAX_PERSONAL_ACTIVE_LISTINGS} active personal listings. Mark one as sold or inactive before posting another.`);
+      throw new ApiError(409, `You already have ${MAX_PERSONAL_ACTIVE_LISTINGS} active personal listings. Mark one as sold or inactive before posting another.`, { code: 'PERSONAL_LISTING_LIMIT_REACHED' });
     }
   }
 
@@ -274,7 +274,7 @@ export const setListingStatus = asyncHandler(async (req, res) => {
     });
     if (!target) throw new ApiError(404, 'Listing not found.');
     if (target.postingType !== 'business') {
-      throw new ApiError(422, 'Only business listings can be featured.');
+      throw new ApiError(422, 'Only business listings can be featured.', { code: 'FEATURED_REQUIRES_BUSINESS' });
     }
     // Featured-slot cap: count this owner's listings that are featured AND not
     // expired (featuredUntil > now), excluding this listing. Expired slots free
@@ -284,7 +284,7 @@ export const setListingStatus = asyncHandler(async (req, res) => {
       where: { userId: target.userId, featuredActive: true, featuredUntil: { gt: now }, id: { not: id } },
     });
     if (count >= MAX_FEATURED_PER_BUSINESS) {
-      throw new ApiError(409, `You've used your ${MAX_FEATURED_PER_BUSINESS} beta featured slots. Remove or wait for one to expire, or contact support for more visibility.`);
+      throw new ApiError(409, `You've used your ${MAX_FEATURED_PER_BUSINESS} beta featured slots. Remove or wait for one to expire, or contact support for more visibility.`, { code: 'FEATURED_LIMIT_REACHED' });
     }
     data.featuredActive = true;
     data.featuredUntil = featuredUntilFromNow(now); // 14-day beta window
