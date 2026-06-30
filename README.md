@@ -40,3 +40,5 @@ npm run dev
 ## Business verification (beta)
 
 Business applications require a verification document photo (bill / receipt / business card / rent proof / anything showing the business name or address) plus business address and phone. CNIC photo and NTN are optional during beta. Verification documents are uploaded to Cloudinary (`malir/business-verification`) and are **admin-only** — never exposed on public pages.
+
+> Business verification documents are admin-only and used only to verify authenticity before approval. Admins review them in Admin → Business (thumbnail + link); rejection can include a reason shown to the applicant. Never exposed on public pages.
