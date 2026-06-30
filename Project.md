@@ -203,3 +203,5 @@ Applying for a business account requires proof the business is real:
 - **Optional (beta):** owner CNIC photo, NTN / registration number.
 - Verification documents are **admin-only** — they are never shown on public business, shop, or seller pages.
 - Admins review the document before approving a business; approval (with payment waived for beta) unlocks shop management and business listings.
+
+> Business verification documents are admin-only and used only to verify authenticity before approval. Admins review them in Admin → Business (thumbnail + link); rejection can include a reason shown to the applicant. Never exposed on public pages.

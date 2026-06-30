@@ -537,27 +537,28 @@ export default function AdminPage() {
                             <div className="admin__row-meta"><span>{b.businessAddress}</span></div>
                           )}
                           {/* Admin-only verification documents */}
-                          <div className="admin__row-meta">
-                            {b.verificationDocUrl ? (
-                              <a href={b.verificationDocUrl} target="_blank" rel="noopener noreferrer" className="admin__row-doclink">
-                                View verification document ↗
+                          {b.verificationDocUrl ? (
+                            <div className="admin__docs">
+                              <a href={b.verificationDocUrl} target="_blank" rel="noopener noreferrer" className="admin__doc">
+                                <img src={b.verificationDocUrl} alt="" className="admin__doc-thumb" loading="lazy" />
+                                <span className="admin__doc-cap">{b.verificationDocLabel || 'Verification document'} ↗</span>
                               </a>
-                            ) : (
-                              <span className="admin__row-warn">No verification document</span>
-                            )}
-                            {b.cnicDocUrl && (
-                              <>
-                                <span className="admin__row-dot" aria-hidden="true" />
-                                <a href={b.cnicDocUrl} target="_blank" rel="noopener noreferrer" className="admin__row-doclink">CNIC ↗</a>
-                              </>
-                            )}
-                            {b.ntnNumber && (
-                              <>
-                                <span className="admin__row-dot" aria-hidden="true" />
-                                <span>NTN: {b.ntnNumber}</span>
-                              </>
-                            )}
-                          </div>
+                              {b.cnicDocUrl && (
+                                <a href={b.cnicDocUrl} target="_blank" rel="noopener noreferrer" className="admin__doc">
+                                  <img src={b.cnicDocUrl} alt="" className="admin__doc-thumb" loading="lazy" />
+                                  <span className="admin__doc-cap">CNIC ↗</span>
+                                </a>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="admin__row-meta"><span className="admin__row-warn">No verification document</span></div>
+                          )}
+                          {b.ntnNumber && (
+                            <div className="admin__row-meta"><span>NTN: {b.ntnNumber}</span></div>
+                          )}
+                          {b.adminNotes && (
+                            <div className="admin__row-meta"><span>Note: {b.adminNotes}</span></div>
+                          )}
                         </div>
                         <div className="admin__row-actions">
                           {b.sellerStatus !== 'approved' && (
@@ -567,7 +568,13 @@ export default function AdminPage() {
                                 <CheckIcon /> Approve
                               </button>
                               <button className="admin__btn admin__btn--reject" disabled={busy}
-                                onClick={() => decideBusiness(b.id, { sellerStatus: 'rejected' }, 'Business Seller rejected', true)}>
+                                onClick={() => {
+                                  // Optional rejection reason shown to the applicant. Cancel aborts.
+                                  const reason = window.prompt('Optional: reason for rejection (shown to the applicant). Leave blank for none, Cancel to abort.');
+                                  if (reason === null) return;
+                                  const body = { sellerStatus: 'rejected', ...(reason.trim() ? { adminNotes: reason.trim() } : {}) };
+                                  decideBusiness(b.id, body, 'Business Seller rejected', true);
+                                }}>
                                 <XIcon /> Reject
                               </button>
                             </>
