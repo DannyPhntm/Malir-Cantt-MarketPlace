@@ -43,3 +43,5 @@ Business applications require a verification document photo (bill / receipt / bu
 
 > Admin user blocking (beta): admins can reversibly block/unblock a user (Admin → Users). Enforced server-side — blocked accounts get 403 "Your account has been restricted. Please contact support." on login and all protected actions. Blocking never deletes data; admins cannot block themselves or other admins.
 > Business verification documents are admin-only and used only to verify authenticity before approval. Admins review them in Admin → Business (thumbnail + link); rejection can include a reason shown to the applicant. Never exposed on public pages.
+
+> Legal/safety: /terms, /privacy, /safety pages added (footer-linked). The platform is a connector, not a transaction guarantor; business verification documents are collected for admin review only (never public); beta payments are not processed by the platform.
