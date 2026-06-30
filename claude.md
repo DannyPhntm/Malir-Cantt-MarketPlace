@@ -531,3 +531,5 @@ Single source of truth for monetisation / verification / admin-approval constant
 - Business-account applications (`POST /api/business-accounts`, multipart) require a **verification document photo** (+ business address & phone); CNIC photo and NTN are optional. `POST /api/business-accounts/apply` refuses without a verification doc on file.
 - Docs go to Cloudinary `malir/business-verification` via `storeImageBufferDetailed` (image-only, ≤5 MB, verified, `{url, publicId}` stored — no base64 in DB).
 - **Verification/CNIC/NTN are admin-only.** Public seller (`listings` `sellerSelect`) and shop (`ownerSelect`) queries use explicit field lists that exclude them; `GET /business-accounts/:id` is owner-or-admin and strips doc fields for non-admins. **Never add verification fields to any public/business/shop/seller response.**
+
+> Admin user blocking (beta): admins can reversibly block/unblock a user (Admin → Users). Enforced server-side — blocked accounts get 403 "Your account has been restricted. Please contact support." on login and all protected actions. Blocking never deletes data; admins cannot block themselves or other admins.

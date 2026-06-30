@@ -315,3 +315,20 @@ When AI image generation (Higgsfield) was unavailable, the fallback was curated 
 **Privacy (admin-only):** Verification/CNIC/NTN are **never** returned by public endpoints — the seller (`listings`) and shop selects use explicit field lists that omit them. `GET /business-accounts/:id` is owner-or-admin and strips the private doc fields for non-admins. Admin list/queue returns them (admin-gated). Public business/shop/seller pages must never expose verification documents.
 
 **Beta scope:** No NTN/CNIC requirement; payment still waived by admin on approval (unchanged).
+
+## Admin user blocking (beta) — 2026-06-30
+
+**Decision:** Admins can **reversibly block/suspend** a user (misuse, fraud, spam, fake listings, rule violations). Blocking **never deletes data**.
+
+**Model:** additive nullable fields on `users` (migration `…_user_blocking`): `is_blocked` (default false), `blocked_at`, `blocked_reason`, `blocked_by_admin_id`.
+
+**Enforcement (backend, not frontend-only):**
+- `requireAuth` now looks the user up and returns **403 `ACCOUNT_BLOCKED`** ("Your account has been restricted. Please contact support.") on every protected route — so an existing token can't create/edit listings, apply for business, or manage a shop while blocked. (Also refreshes role per request.)
+- `login` and email-verify auto-sign-in reject blocked accounts with the same 403 message.
+- Endpoints: `PATCH /users/:id/block { reason? }` and `PATCH /users/:id/unblock` — **admin only**. An admin cannot block themselves or another admin (prevents lockout).
+
+**Listings of a blocked user:** kept as-is (approved listings stay visible); admins hide/reject them separately if needed. Blocked users simply can't take new actions. Public contact form stays open (anonymous).
+
+**Admin UI:** Users tab shows a **Blocked** tag + reason and a **Block/Unblock** button (hidden for admin accounts); block prompts for an optional reason, unblock confirms.
+
+**Notes:** blocking is reversible, does not delete data, and blocked accounts must contact support.

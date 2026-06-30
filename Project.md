@@ -203,3 +203,5 @@ Applying for a business account requires proof the business is real:
 - **Optional (beta):** owner CNIC photo, NTN / registration number.
 - Verification documents are **admin-only** — they are never shown on public business, shop, or seller pages.
 - Admins review the document before approving a business; approval (with payment waived for beta) unlocks shop management and business listings.
+
+> Admin user blocking (beta): admins can reversibly block/unblock a user (Admin → Users). Enforced server-side — blocked accounts get 403 "Your account has been restricted. Please contact support." on login and all protected actions. Blocking never deletes data; admins cannot block themselves or other admins.

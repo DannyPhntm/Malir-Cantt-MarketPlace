@@ -66,6 +66,11 @@ export const userListQuerySchema = z.object({
   search: z.string().trim().max(100).optional(),
 });
 
+// Admin block action — optional reason shown in admin views.
+export const blockUserSchema = z.object({
+  reason: z.preprocess((v) => (v == null || v === '' ? undefined : v), z.string().trim().max(500).optional()),
+});
+
 /* ── Contact form ────────────────────────────────────────────────────────────── */
 
 const CONTACT_CATEGORIES = ['general', 'business', 'featured', 'bug', 'scam', 'suggestion'];
