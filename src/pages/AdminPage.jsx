@@ -90,16 +90,25 @@ export default function AdminPage() {
     setLoading(true);
     setError(null);
     try {
-      const [sres, fres, bres, ures, shres] = await Promise.all([
+      const [sres, fres, bresPending, bresApproved, ures, shres] = await Promise.all([
         adminApi.getStats(),
         adminApi.listFeaturedRequests(),
         adminApi.listBusinessAccounts('pending'),
+        adminApi.listBusinessAccounts('approved'),
         adminApi.listUsers(),
         shopsApi.listAll(),
       ]);
       setStats(sres.stats);
       setFeaturedReqs(fres.listings.map(adaptListing));
-      setBusinesses(bres.businessAccounts);
+      // Show pending applications + approved-but-not-yet-settled accounts (the
+      // latter still need a waive/mark-paid to become a live business — otherwise
+      // the user is "approved" but businessVerified stays false). Fully-settled
+      // businesses aren't shown (nothing actionable).
+      const isSettled = (b) => b.paymentStatus === 'paid' || b.paymentStatus === 'waived';
+      setBusinesses([
+        ...bresPending.businessAccounts,
+        ...bresApproved.businessAccounts.filter((b) => !isSettled(b)),
+      ]);
       setUsers(ures.users);
       setShops(shres.shops || []);
     } catch (e) {
@@ -526,14 +535,18 @@ export default function AdminPage() {
                           </div>
                         </div>
                         <div className="admin__row-actions">
-                          <button className="admin__btn admin__btn--approve" disabled={busy}
-                            onClick={() => decideBusiness(b.id, { sellerStatus: 'approved' }, 'Business Seller approved', true)}>
-                            <CheckIcon /> Approve
-                          </button>
-                          <button className="admin__btn admin__btn--reject" disabled={busy}
-                            onClick={() => decideBusiness(b.id, { sellerStatus: 'rejected' }, 'Business Seller rejected', true)}>
-                            <XIcon /> Reject
-                          </button>
+                          {b.sellerStatus !== 'approved' && (
+                            <>
+                              <button className="admin__btn admin__btn--approve" disabled={busy}
+                                onClick={() => decideBusiness(b.id, { sellerStatus: 'approved', paymentStatus: b.paymentStatus === 'paid' ? 'paid' : 'waived' }, 'Business Seller approved', true)}>
+                                <CheckIcon /> Approve
+                              </button>
+                              <button className="admin__btn admin__btn--reject" disabled={busy}
+                                onClick={() => decideBusiness(b.id, { sellerStatus: 'rejected' }, 'Business Seller rejected', true)}>
+                                <XIcon /> Reject
+                              </button>
+                            </>
+                          )}
                           {b.paymentStatus !== 'waived' && (
                             <button className="admin__btn" disabled={busy}
                               onClick={() => decideBusiness(b.id, { paymentStatus: 'waived' }, 'Payment waived', false)}>
