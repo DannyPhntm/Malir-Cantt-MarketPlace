@@ -32,6 +32,11 @@ model User {
   role             String   @default("user") // user | admin
   businessVerified Boolean  @default(false) @map("business_verified")
   emailVerified    Boolean  @default(false) @map("email_verified")
+  // Admin moderation — reversible account suspension (never deletes data).
+  isBlocked        Boolean   @default(false) @map("is_blocked")
+  blockedAt        DateTime? @map("blocked_at")
+  blockedReason    String?   @map("blocked_reason")
+  blockedByAdminId Int?      @map("blocked_by_admin_id")
   createdAt        DateTime @default(now()) @map("created_at")
 
   listings        Listing[]

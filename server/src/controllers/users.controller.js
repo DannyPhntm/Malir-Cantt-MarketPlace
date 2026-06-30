@@ -49,3 +49,38 @@ export const updateUser = asyncHandler(async (req, res) => {
   const user = await prisma.user.update({ where: { id }, data: req.body });
   res.json({ user: publicUser(user) });
 });
+
+/* PATCH /api/users/:id/block — admin only. Reversible suspension; never deletes
+   data. An admin cannot block their own account or another admin (avoids lockout). */
+export const blockUser = asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  if (id === req.user.id) throw new ApiError(400, 'You cannot block your own account.');
+
+  const target = await prisma.user.findUnique({ where: { id }, select: { id: true, role: true } });
+  if (!target) throw new ApiError(404, 'User not found.');
+  if (target.role === 'admin') throw new ApiError(400, 'Admin accounts cannot be blocked.');
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: {
+      isBlocked: true,
+      blockedAt: new Date(),
+      blockedReason: req.body.reason || null,
+      blockedByAdminId: req.user.id,
+    },
+  });
+  res.json({ user: publicUser(user) });
+});
+
+/* PATCH /api/users/:id/unblock — admin only. Restores access; clears block meta. */
+export const unblockUser = asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const target = await prisma.user.findUnique({ where: { id }, select: { id: true } });
+  if (!target) throw new ApiError(404, 'User not found.');
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: { isBlocked: false, blockedAt: null, blockedReason: null, blockedByAdminId: null },
+  });
+  res.json({ user: publicUser(user) });
+});

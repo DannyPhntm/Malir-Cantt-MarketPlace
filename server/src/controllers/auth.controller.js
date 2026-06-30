@@ -4,6 +4,7 @@ import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
 import { generateCode, codeExpiry, isExpired } from '../lib/codes.js';
 import { MAX_CODE_ATTEMPTS } from '../lib/constants.js';
 import { signToken } from '../lib/jwt.js';
+import { ACCOUNT_BLOCKED_MESSAGE } from '../middleware/auth.js';
 import {
   sendVerificationEmail,
   sendPasswordResetEmail,
@@ -120,6 +121,7 @@ export const verifyEmail = asyncHandler(async (req, res) => {
   ]);
 
   const user = await prisma.user.findUnique({ where: { email }, include: { businessAccount: true } });
+  if (user.isBlocked) throw new ApiError(403, ACCOUNT_BLOCKED_MESSAGE, { code: 'ACCOUNT_BLOCKED' });
   // Email verified → sign the user in.
   res.json({ verified: true, user: publicUser(user), token: signToken(user) });
 });
@@ -160,6 +162,7 @@ export const login = asyncHandler(async (req, res) => {
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) throw new ApiError(401, 'Invalid email or password.');
+  if (user.isBlocked) throw new ApiError(403, ACCOUNT_BLOCKED_MESSAGE, { code: 'ACCOUNT_BLOCKED' });
 
   res.json({ user: publicUser(user), token: signToken(user) });
 });

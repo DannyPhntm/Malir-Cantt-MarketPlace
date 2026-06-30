@@ -204,6 +204,32 @@ export default function AdminPage() {
     }
   };
 
+  // Reversible user block / unblock (admin only). Blocking prompts for an
+  // optional reason (cancel aborts); unblocking confirms.
+  const toggleBlockUser = async (u) => {
+    const blocking = !u.isBlocked;
+    let reason;
+    if (blocking) {
+      reason = window.prompt(`Block ${u.name} (${u.email})? They can't log in or post until unblocked.\nOptional reason (shown in admin views), or leave blank. Cancel to abort.`);
+      if (reason === null) return; // cancelled
+    } else if (!window.confirm(`Unblock ${u.name} (${u.email})?`)) {
+      return;
+    }
+    setBusyId(`u${u.id}`);
+    setError(null);
+    try {
+      const res = blocking
+        ? await adminApi.blockUser(u.id, reason?.trim() || undefined)
+        : await adminApi.unblockUser(u.id);
+      setUsers((prev) => prev.map((x) => (x.id === u.id ? res.user : x)));
+      showFlash(blocking ? 'User blocked' : 'User unblocked');
+    } catch (e) {
+      setError(e?.message || 'Could not update the user.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   // Shops moderation: action 'approve' | 'hide' | 'delete'.
   const decideShop = async (id, action, label) => {
     setBusyId(`s${id}`);
@@ -624,6 +650,7 @@ export default function AdminPage() {
                           <div className="admin__row-top">
                             <span className="admin__row-title">{u.name}</span>
                             {u.role === 'admin' && <span className="admin__tag admin__tag--featured">Admin</span>}
+                            {u.isBlocked && <span className="admin__tag admin__tag--blocked">Blocked</span>}
                             <span className="admin__tag">{u.accountType === 'business' ? 'Business' : 'Personal'}</span>
                             {u.businessVerified && <span className="admin__tag">Verified business</span>}
                             {u.emailVerified && <span className="admin__tag">Email ✓</span>}
@@ -635,7 +662,21 @@ export default function AdminPage() {
                             <span className="admin__row-dot" aria-hidden="true" />
                             <span>{u._count?.listings ?? 0} listings</span>
                           </div>
+                          {u.isBlocked && u.blockedReason && (
+                            <div className="admin__row-meta"><span>Reason: {u.blockedReason}</span></div>
+                          )}
                         </div>
+                        {/* Admin accounts can't be blocked (prevents lockout). */}
+                        {u.role !== 'admin' && (
+                          <div className="admin__row-actions">
+                            <button
+                              className={`admin__btn ${u.isBlocked ? 'admin__btn--approve' : 'admin__btn--reject'}`}
+                              disabled={busyId === `u${u.id}`}
+                              onClick={() => toggleBlockUser(u)}>
+                              {u.isBlocked ? 'Unblock' : 'Block'}
+                            </button>
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>

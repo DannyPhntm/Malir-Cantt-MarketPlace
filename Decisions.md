@@ -316,6 +316,22 @@ When AI image generation (Higgsfield) was unavailable, the fallback was curated 
 
 **Beta scope:** No NTN/CNIC requirement; payment still waived by admin on approval (unchanged).
 
+## Admin user blocking (beta) — 2026-06-30
+
+**Decision:** Admins can **reversibly block/suspend** a user (misuse, fraud, spam, fake listings, rule violations). Blocking **never deletes data**.
+
+**Model:** additive nullable fields on `users` (migration `…_user_blocking`): `is_blocked` (default false), `blocked_at`, `blocked_reason`, `blocked_by_admin_id`.
+
+**Enforcement (backend, not frontend-only):**
+- `requireAuth` now looks the user up and returns **403 `ACCOUNT_BLOCKED`** ("Your account has been restricted. Please contact support.") on every protected route — so an existing token can't create/edit listings, apply for business, or manage a shop while blocked. (Also refreshes role per request.)
+- `login` and email-verify auto-sign-in reject blocked accounts with the same 403 message.
+- Endpoints: `PATCH /users/:id/block { reason? }` and `PATCH /users/:id/unblock` — **admin only**. An admin cannot block themselves or another admin (prevents lockout).
+
+**Listings of a blocked user:** kept as-is (approved listings stay visible); admins hide/reject them separately if needed. Blocked users simply can't take new actions. Public contact form stays open (anonymous).
+
+**Admin UI:** Users tab shows a **Blocked** tag + reason and a **Block/Unblock** button (hidden for admin accounts); block prompts for an optional reason, unblock confirms.
+
+**Notes:** blocking is reversible, does not delete data, and blocked accounts must contact support.
 ### Admin review of verification docs — 2026-06-30
 
 The Admin → Business tab shows each pending applicant's name/email, business name, phone, address, and a **thumbnail + link to the verification document** (and CNIC/NTN when provided) — admin-only. Approve settles payment (`businessVerified=true`); Reject prompts for an optional reason. Added nullable `admin_notes` on `business_accounts` (migration `…_business_admin_notes`) — the admin note / rejection reason, visible to the owner (shown on the apply page when rejected) and admins, **never on public endpoints**. Business verification documents are admin-only and used only to verify authenticity before approval.

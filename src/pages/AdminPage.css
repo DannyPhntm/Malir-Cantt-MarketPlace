@@ -443,3 +443,6 @@ a.admin__row-title:hover {
 }
 .admin__doc-cap { font-size: var(--text-xs); color: var(--color-primary); font-weight: var(--fw-semibold); word-break: break-word; }
 .admin__doc:hover .admin__doc-cap { text-decoration: underline; }
+
+/* Blocked-user tag */
+.admin__tag--blocked { background: #fdecec; color: var(--color-danger); }

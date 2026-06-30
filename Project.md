@@ -204,4 +204,5 @@ Applying for a business account requires proof the business is real:
 - Verification documents are **admin-only** — they are never shown on public business, shop, or seller pages.
 - Admins review the document before approving a business; approval (with payment waived for beta) unlocks shop management and business listings.
 
+> Admin user blocking (beta): admins can reversibly block/unblock a user (Admin → Users). Enforced server-side — blocked accounts get 403 "Your account has been restricted. Please contact support." on login and all protected actions. Blocking never deletes data; admins cannot block themselves or other admins.
 > Business verification documents are admin-only and used only to verify authenticity before approval. Admins review them in Admin → Business (thumbnail + link); rejection can include a reason shown to the applicant. Never exposed on public pages.

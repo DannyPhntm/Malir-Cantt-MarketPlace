@@ -10,6 +10,9 @@ export const adminApi = {
   // Users (optional name/email search)
   listUsers: (search) =>
     apiClient.get(`/users${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  // Reversible account suspension (admin only). body: { reason? }
+  blockUser: (id, reason) => apiClient.patch(`/users/${id}/block`, reason ? { reason } : {}),
+  unblockUser: (id) => apiClient.patch(`/users/${id}/unblock`, {}),
 
   // Listings — filter by status (pending | approved | rejected | sold | hidden)
   listListings: (status = 'pending') => apiClient.get(`/listings?status=${status}`),
