@@ -48,6 +48,13 @@ export function createApp() {
 
   app.use(express.json({ limit: '15mb' })); // headroom for base64 image payloads
 
+  // API responses are dynamic — never let the browser/CDN serve a stale cached
+  // copy (fixes lists like /shops showing old data until a manual refresh).
+  app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+  });
+
   // Generous global rate limit on the whole API (per IP).
   app.use('/api', globalLimiter);
 

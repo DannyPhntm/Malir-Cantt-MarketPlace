@@ -18,6 +18,7 @@ const CATEGORY_META = {
   food:          { name: 'Food',          description: 'Home food, baking, catering, and meal prep' },
   jobs:          { name: 'Jobs',          description: 'Full-time, part-time, and internship opportunities' },
   fitness:       { name: 'Fitness',       description: 'Equipment, memberships, supplements, and activewear' },
+  education:     { name: 'Education',     description: 'Tuition, tutors, academies, courses, and study material' },
   other:         { name: 'Other',         description: 'Everything else on the marketplace' },
 };
 

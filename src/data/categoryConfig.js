@@ -185,6 +185,25 @@ export const CATEGORY_CONFIG = {
     ],
   },
 
+  education: {
+    label: 'Education',
+    titlePlaceholder: 'e.g. O-Level Maths Tuition — Home & Online',
+    priceLabel: 'Fee',
+    pricePlaceholder: 'e.g. 5,000 / month',
+    images: { required: false, min: 0, max: 10, label: 'Add photos (optional) — academy, materials, etc.' },
+    subcategories: [
+      { slug: 'tuition', label: 'Tuition' }, { slug: 'tutors', label: 'Tutors' },
+      { slug: 'academies', label: 'Academies' }, { slug: 'courses', label: 'Courses & Classes' },
+      { slug: 'study-material', label: 'Books & Study Material' },
+    ],
+    fields: [
+      { name: 'subject',   label: 'Subject / Focus',  type: 'text',   required: true, placeholder: 'e.g. Maths, Quran, IELTS, Coding', col: 2 },
+      { name: 'level',     label: 'Level',            type: 'select',                 options: ['Primary','Middle','Matric','O-Level','A-Level','Intermediate','University','Professional','All Levels'], col: 1 },
+      { name: 'mode',      label: 'Mode',             type: 'select',                 options: ['In-person','Online','Home Tuition','Hybrid'], col: 1 },
+      { name: 'schedule',  label: 'Schedule',         type: 'text',                   placeholder: 'e.g. Mon–Fri, evenings',           col: 1 },
+    ],
+  },
+
   other: {
     label: 'Other',
     titlePlaceholder: 'What are you listing?',

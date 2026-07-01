@@ -345,3 +345,9 @@ Key positions documented for users:
 - **Business verification documents** are collected for **admin review only**, never shown publicly.
 - **Beta payments are not processed by the platform** (no gateway); buyer/seller pay each other directly.
 - Accounts can be blocked/suspended for misuse (reversible).
+
+## Beta trio fixes — 2026-07-01
+
+- **Education category added.** New marketplace category `education` (subcategories: tuition, tutors, academies, courses, study-material) for personal + business listings; images optional (like jobs/services). Added to backend `CATEGORIES`/`SUBCATEGORIES`/`IMAGE_OPTIONAL_CATEGORIES`, frontend `categoryConfig`, HomePage category card, and CategoryPage meta. Existing categories unchanged.
+- **Shops tab stale-until-refresh fixed.** Root cause: API GET responses had no `Cache-Control`, so the browser served a stale `/shops` list; and the page didn't refetch when returning to an already-open tab. Fix: backend sends `Cache-Control: no-store` on all `/api` responses (dynamic data), and ShopsPage refetches on mount + window focus/visibility. Loading/empty gating already correct.
+- **Listing card mobile metadata fixed.** Root cause: `.listing-card__time` had no `white-space:nowrap`, so "1 day ago" broke into 3 lines when the verified badge squeezed it; location had no ellipsis. Fix: time `nowrap` + `flex-shrink:0`; location `min-width:0` + `nowrap` + ellipsis; category pill `flex-shrink:0` `nowrap`; footer `flex-wrap` so the badge drops as a whole unit. No card redesign.

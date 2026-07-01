@@ -536,3 +536,5 @@ Single source of truth for monetisation / verification / admin-approval constant
 > Business verification documents are admin-only and used only to verify authenticity before approval. Admins review them in Admin → Business (thumbnail + link); rejection can include a reason shown to the applicant. Never exposed on public pages.
 
 > Legal/safety: /terms, /privacy, /safety pages added (footer-linked). The platform is a connector, not a transaction guarantor; business verification documents are collected for admin review only (never public); beta payments are not processed by the platform.
+
+> Categories now include **Education** (tuition/tutors/academies/courses/study-material; optional images). API sends Cache-Control: no-store so lists (e.g. Shops) never show stale data; ShopsPage refetches on focus. Listing card metadata (time/location/badge) fixed for mobile (nowrap/ellipsis/flex-wrap).
