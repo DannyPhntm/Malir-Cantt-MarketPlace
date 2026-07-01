@@ -57,3 +57,80 @@
 .bizapply__verify-text { font-size: var(--text-sm); color: var(--color-secondary); line-height: var(--lh-normal); margin: 0; }
 .bizapply__file-name { display: inline-block; margin-left: var(--space-3); font-size: var(--text-sm); color: var(--color-secondary); word-break: break-all; }
 .bizapply__optional { color: var(--color-secondary); font-weight: var(--fw-regular); }
+
+/* Form controls — scoped copy of the shared control styles so the Apply page
+   renders proper inputs (these classes are not global). Matches AddListingPage. */
+.bizapply .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.bizapply .form-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+}
+.bizapply .form-required { color: var(--color-danger); margin-left: 2px; }
+
+.bizapply .form-input,
+.bizapply .form-select {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--color-ink);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-4);
+  height: 44px;
+  width: 100%;
+  transition:
+    border-color var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
+}
+.bizapply .form-input::placeholder { color: var(--color-muted); }
+
+.bizapply .form-input:focus,
+.bizapply .form-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-pale);
+}
+.bizapply .form-input--error,
+.bizapply .form-select--error { border-color: var(--color-danger); }
+
+.bizapply .form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+}
+.bizapply .form-select-wrap { position: relative; }
+.bizapply .form-select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-secondary);
+  pointer-events: none;
+}
+.bizapply .form-error {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
+/* Upload rows — button + selected file name aligned on one line */
+.bizapply__upload-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.bizapply__upload-btn { height: 44px; flex-shrink: 0; }
+.bizapply__file-name {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-secondary);
+  word-break: break-all;
+  min-width: 0;
+}
