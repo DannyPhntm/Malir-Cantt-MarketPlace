@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FavoritesDrawer from './components/FavoritesDrawer';
 import ScrollToTop from './components/ScrollToTop';
+import RouteSeo from './components/RouteSeo';
 import LoadingState from './components/LoadingState';
 import HomePage from './pages/HomePage';
 
@@ -68,6 +69,7 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
+      <RouteSeo />
       <Navbar />
       <FavoritesDrawer />
       <Suspense fallback={<LoadingState label="Loading…" />}>

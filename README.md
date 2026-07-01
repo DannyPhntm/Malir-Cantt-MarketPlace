@@ -60,3 +60,5 @@ Run on every deploy so code and database stay in sync (prevents "internal server
 1. Redeploy from `main`. Confirm `VITE_API_URL` points at the Railway API.
 
 **Rule of thumb:** a PR that adds a migration is not "done" until `prisma migrate deploy` has run on the live DB.
+
+> SEO: per-route meta/canonical/OG via RouteSeo + seoConfig; static /robots.txt + /sitemap.xml; JSON-LD in index.html. Public pages index; admin/dashboard/profile/login/apply-business/my-shop/etc are noindex; non-prod hosts forced noindex. Add a 1200x630 public/og-image.png for social previews. GSC: verify domain via Porkbun DNS TXT, submit sitemap. Business QR → /apply-business.
