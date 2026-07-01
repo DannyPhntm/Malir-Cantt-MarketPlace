@@ -351,3 +351,20 @@ Key positions documented for users:
 - **Education category added.** New marketplace category `education` (subcategories: tuition, tutors, academies, courses, study-material) for personal + business listings; images optional (like jobs/services). Added to backend `CATEGORIES`/`SUBCATEGORIES`/`IMAGE_OPTIONAL_CATEGORIES`, frontend `categoryConfig`, HomePage category card, and CategoryPage meta. Existing categories unchanged.
 - **Shops tab stale-until-refresh fixed.** Root cause: API GET responses had no `Cache-Control`, so the browser served a stale `/shops` list; and the page didn't refetch when returning to an already-open tab. Fix: backend sends `Cache-Control: no-store` on all `/api` responses (dynamic data), and ShopsPage refetches on mount + window focus/visibility. Loading/empty gating already correct.
 - **Listing card mobile metadata fixed.** Root cause: `.listing-card__time` had no `white-space:nowrap`, so "1 day ago" broke into 3 lines when the verified badge squeezed it; location had no ellipsis. Fix: time `nowrap` + `flex-shrink:0`; location `min-width:0` + `nowrap` + ellipsis; category pill `flex-shrink:0` `nowrap`; footer `flex-wrap` so the badge drops as a whole unit. No card redesign.
+## Basic SEO (pre-beta) — 2026-07-01
+
+Added crawlability/SEO without a redesign or new deps:
+- **Per-route head tags** via `src/components/RouteSeo.jsx` (+ `src/lib/seoConfig.js`), rendered once in `App.jsx`. Sets title/description/canonical/robots/OG/Twitter per path (Googlebot runs JS). Canonical always → `https://malircanttbazaar.com` (Vercel previews never compete). **Non-production hosts force `noindex,nofollow`** so previews/localhost aren't indexed.
+- **Indexable (index,follow):** `/`, `/listings`, `/shops`, `/about`, `/contact`, `/terms`, `/privacy`, `/safety`, and public dynamic pages `/category/*`, `/listing/*`, `/shops/*`, `/seller/*`.
+- **noindex,nofollow:** `/admin`, `/dashboard`, `/profile`, `/login`, `/register`, `/reset-password`, `/verify-email`, `/apply-business`, `/my-shop`, `/my-listings`, `/saved-listings`, `/add-listing`, `/edit-listing`.
+- **`public/robots.txt`** — allow public, disallow private/auth, links the sitemap.
+- **`public/sitemap.xml`** — static core public pages. (Dynamic per-listing/shop sitemap = future improvement.)
+- **JSON-LD** (`WebSite` + `SearchAction` → `/listings?q=`) in `index.html`. Honest, local (areaServed Malir Cantt); no fake address/phone; not marked as a physical shop.
+- `og-image.png` referenced at site root — **needs a real 1200×630 image added to `public/`** (until then social shares show no preview image).
+- Note: no `/categories` route exists (categories are the homepage carousel + `/category/:slug`), so it's intentionally not in the sitemap.
+
+**Google Search Console (manual, after deploy):** add domain property `malircanttbazaar.com` → verify via Porkbun DNS TXT → submit `https://malircanttbazaar.com/sitemap.xml` → URL-inspect `/` → Request indexing (not instant/guaranteed).
+
+**QR outreach:** point the business QR at `https://malircanttbazaar.com/apply-business` (works, mobile-friendly). Printed line: "Scan to register your business on People of Malir Cantt Bazaar." Test on iPhone + Android before printing. Downloadable QR asset = optional later.
+
+**CSP note:** the JSON-LD is an inline `<script type="application/ld+json">`. Harmless under the current report-only CSP; when CSP is enforced, add a hash for this block (or keep it as the only allowed inline script).

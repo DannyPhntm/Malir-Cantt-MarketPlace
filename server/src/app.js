@@ -20,6 +20,9 @@ const ALLOWED_ORIGINS = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
 export function createApp() {
   const app = express();
 
+  // Don't reveal the framework (Helmet also removes this; explicit for clarity).
+  app.disable('x-powered-by');
+
   // Behind Railway's proxy the real client IP is in X-Forwarded-For. Trust the
   // first hop so req.ip (and therefore per-IP rate limiting / brute-force
   // protection) keys on the actual client, not the shared proxy address.
