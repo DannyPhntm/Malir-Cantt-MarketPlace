@@ -208,3 +208,5 @@ Applying for a business account requires proof the business is real:
 > Business verification documents are admin-only and used only to verify authenticity before approval. Admins review them in Admin → Business (thumbnail + link); rejection can include a reason shown to the applicant. Never exposed on public pages.
 
 > Legal/safety: /terms, /privacy, /safety pages added (footer-linked). The platform is a connector, not a transaction guarantor; business verification documents are collected for admin review only (never public); beta payments are not processed by the platform.
+
+> SEO: per-route meta/canonical/OG via RouteSeo + seoConfig; static /robots.txt + /sitemap.xml; JSON-LD in index.html. Public pages index; admin/dashboard/profile/login/apply-business/my-shop/etc are noindex; non-prod hosts forced noindex. Add a 1200x630 public/og-image.png for social previews. GSC: verify domain via Porkbun DNS TXT, submit sitemap. Business QR → /apply-business.

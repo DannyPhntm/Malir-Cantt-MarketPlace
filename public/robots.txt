@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /login
+Disallow: /register
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /apply-business
+Disallow: /my-shop
+Disallow: /my-listings
+Disallow: /saved-listings
+Disallow: /add-listing
+Disallow: /edit-listing
+
+Sitemap: https://malircanttbazaar.com/sitemap.xml
