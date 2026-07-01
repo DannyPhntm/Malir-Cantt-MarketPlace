@@ -17,7 +17,9 @@ export default function BusinessApplyPage() {
     businessName: profile?.businessName || '',
     businessType: '',
     businessAddress: '',
-    businessPhone: profile?.phone || '',
+    // Start empty so the user types their own number; the input shows a subtle
+    // placeholder example (0300-0000000) rather than a pre-filled value.
+    businessPhone: '',
     ntnNumber: '',
   });
   const [verificationFile, setVerificationFile] = useState(null);
