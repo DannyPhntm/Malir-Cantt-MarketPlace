@@ -94,7 +94,8 @@ export function sendVerificationEmail({ to, code, name }) {
     text: `Hi${name ? ' ' + name : ''}, your verification code is ${code}. It expires in 10 minutes.`,
     html: codeLayout({
       heading: 'Verify your email',
-      intro: `Hi${name ? ' ' + name : ''}, welcome to ${BRAND}. Enter the code below to verify your email address.`,
+      // name is user-supplied → escape it in the HTML body (text/plain below is safe).
+      intro: `Hi${name ? ' ' + esc(name) : ''}, welcome to ${BRAND}. Enter the code below to verify your email address.`,
       code,
       footer: "This code expires in 10 minutes. If you didn't request it, you can ignore this email.",
     }),
