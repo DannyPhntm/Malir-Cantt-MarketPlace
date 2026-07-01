@@ -141,6 +141,9 @@ export default function BusinessApplyPage() {
                   <option value="">Select…</option>
                   {BUSINESS_TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
+                <svg className="form-select-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </div>
               {errors.businessType && <p className="form-error" role="alert">{errors.businessType}</p>}
             </div>
@@ -154,7 +157,7 @@ export default function BusinessApplyPage() {
             <div className="form-group">
               <label className="form-label" htmlFor="ba-phone">Business phone / WhatsApp <span className="form-required">*</span></label>
               <input id="ba-phone" name="businessPhone" className={`form-input${errors.businessPhone ? ' form-input--error' : ''}`}
-                value={form.businessPhone} onChange={change} placeholder="03XX-XXXXXXX" inputMode="tel" />
+                value={form.businessPhone} onChange={change} placeholder="0300-0000000" inputMode="tel" />
               {errors.businessPhone && <p className="form-error" role="alert">{errors.businessPhone}</p>}
             </div>
 
@@ -169,20 +172,24 @@ export default function BusinessApplyPage() {
               <div className="form-group">
                 <label className="form-label">Verification document <span className="form-required">*</span></label>
                 <input ref={verifInputRef} type="file" accept="image/*" hidden onChange={pickFile(setVerificationFile, 'verificationDoc')} />
-                <button type="button" className="bizapply__btn bizapply__btn--ghost" onClick={() => verifInputRef.current?.click()}>
-                  {verificationFile ? 'Change document' : 'Upload document'}
-                </button>
-                {verificationFile && <span className="bizapply__file-name">{verificationFile.name}</span>}
+                <div className="bizapply__upload-row">
+                  <button type="button" className="bizapply__btn bizapply__btn--ghost bizapply__upload-btn" onClick={() => verifInputRef.current?.click()}>
+                    {verificationFile ? 'Change document' : 'Upload document'}
+                  </button>
+                  <span className="bizapply__file-name">{verificationFile ? verificationFile.name : 'No file selected'}</span>
+                </div>
                 {errors.verificationDoc && <p className="form-error" role="alert">{errors.verificationDoc}</p>}
               </div>
 
               <div className="form-group">
                 <label className="form-label">Owner CNIC photo <span className="bizapply__optional">(optional)</span></label>
                 <input ref={cnicInputRef} type="file" accept="image/*" hidden onChange={pickFile(setCnicFile, 'cnicDoc')} />
-                <button type="button" className="bizapply__btn bizapply__btn--ghost" onClick={() => cnicInputRef.current?.click()}>
-                  {cnicFile ? 'Change CNIC photo' : 'Upload CNIC photo'}
-                </button>
-                {cnicFile && <span className="bizapply__file-name">{cnicFile.name}</span>}
+                <div className="bizapply__upload-row">
+                  <button type="button" className="bizapply__btn bizapply__btn--ghost bizapply__upload-btn" onClick={() => cnicInputRef.current?.click()}>
+                    {cnicFile ? 'Change CNIC photo' : 'Upload CNIC photo'}
+                  </button>
+                  <span className="bizapply__file-name">{cnicFile ? cnicFile.name : 'No file selected'}</span>
+                </div>
                 {errors.cnicDoc && <p className="form-error" role="alert">{errors.cnicDoc}</p>}
               </div>
 
