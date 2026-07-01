@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PageTransition from '../components/PageTransition';
@@ -41,13 +41,27 @@ export default function ShopsPage() {
   const [cat, setCat] = useState('');
   const [q, setQ] = useState('');
 
-  useEffect(() => {
-    let active = true;
+  const mounted = useRef(true);
+  const load = useCallback(() => {
     shopsApi.list()
-      .then((res) => { if (active) setShops(res.shops || []); })
-      .catch((e) => { if (active) setError(e?.message || 'Could not load shops.'); });
-    return () => { active = false; };
+      .then((res) => { if (mounted.current) { setShops(res.shops || []); setError(''); } })
+      .catch((e) => { if (mounted.current) setError(e?.message || 'Could not load shops.'); });
   }, []);
+
+  useEffect(() => {
+    mounted.current = true;
+    load();
+    // Refetch when the user returns to the tab/page so a newly approved shop
+    // shows without a manual refresh (API also sends no-store).
+    const onFocus = () => { if (document.visibilityState !== 'hidden') load(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      mounted.current = false;
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [load]);
 
   const filtered = useMemo(() => {
     if (!shops) return [];

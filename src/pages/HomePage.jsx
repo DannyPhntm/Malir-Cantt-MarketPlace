@@ -18,6 +18,7 @@ const CATEGORY_CARDS = [
   { slug: 'food',        category: 'Food',          title: 'Homemade & Local',    image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=300&fit=crop',  href: '/category/food' },
   { slug: 'jobs',        category: 'Jobs',          title: 'Local Opportunities', image: '/categories/jobs.png',        href: '/category/jobs' },
   { slug: 'fitness',     category: 'Fitness',       title: 'Gym & Fitness',       image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=300&fit=crop',  href: '/category/fitness' },
+  { slug: 'education',   category: 'Education',     title: 'Tuition & Classes',   image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=300&fit=crop',  href: '/category/education' },
   { slug: 'other',       category: 'Other',         title: 'Everything Else',     image: '/categories/other.png',       href: '/category/other' },
 ];
 

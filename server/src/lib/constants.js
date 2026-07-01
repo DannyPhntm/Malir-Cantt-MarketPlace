@@ -5,7 +5,7 @@ export const ACCOUNT_TYPES = ['personal', 'business'];
 
 export const CATEGORIES = [
   'vehicles', 'property', 'electronics', 'home-living', 'fashion',
-  'services', 'food', 'jobs', 'fitness', 'other',
+  'services', 'food', 'jobs', 'fitness', 'education', 'other',
 ];
 
 // Subcategory slugs per category (unique within a category).
@@ -19,6 +19,7 @@ export const SUBCATEGORIES = {
   food:         ['home-food', 'baking', 'catering', 'meal-prep'],
   jobs:         ['full-time', 'part-time', 'internship'],
   fitness:      ['equipment', 'memberships', 'supplements', 'activewear'],
+  education:    ['tuition', 'tutors', 'academies', 'courses', 'study-material'],
   other:        [],
 };
 
@@ -40,7 +41,7 @@ export const SELLER_STATUSES = ['not_applied', 'pending', 'approved', 'rejected'
 // Services allows a personal path (individual tutor / casual help), so it is NOT
 // here; food (cooked-food sale) stays commercial-only.
 export const BUSINESS_ONLY_CATEGORIES = ['food'];
-export const IMAGE_OPTIONAL_CATEGORIES = ['jobs', 'services', 'other'];
+export const IMAGE_OPTIONAL_CATEGORIES = ['jobs', 'services', 'education', 'other'];
 
 // ── Beta listing limits ───────────────────────────────────────────────────────
 // Statuses that occupy a "slot" toward a user's active-listing limit. Pending

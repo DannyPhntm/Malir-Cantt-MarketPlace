@@ -537,4 +537,5 @@ Single source of truth for monetisation / verification / admin-approval constant
 
 > Legal/safety: /terms, /privacy, /safety pages added (footer-linked). The platform is a connector, not a transaction guarantor; business verification documents are collected for admin review only (never public); beta payments are not processed by the platform.
 
+> Categories now include **Education** (tuition/tutors/academies/courses/study-material; optional images). API sends Cache-Control: no-store so lists (e.g. Shops) never show stale data; ShopsPage refetches on focus. Listing card metadata (time/location/badge) fixed for mobile (nowrap/ellipsis/flex-wrap).
 > SEO: per-route meta/canonical/OG via RouteSeo + seoConfig; static /robots.txt + /sitemap.xml; JSON-LD in index.html. Public pages index; admin/dashboard/profile/login/apply-business/my-shop/etc are noindex; non-prod hosts forced noindex. Add a 1200x630 public/og-image.png for social previews. GSC: verify domain via Porkbun DNS TXT, submit sitemap. Business QR → /apply-business.
