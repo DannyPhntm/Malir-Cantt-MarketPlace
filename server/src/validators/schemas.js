@@ -17,6 +17,11 @@ import {
 /* ── Reusable primitives ─────────────────────────────────────────────────────── */
 
 const email = z.string().trim().toLowerCase().email('A valid email is required.');
+
+// Numeric route params (/:id). Rejects NaN/floats/negatives with a clean 422
+// instead of letting `Number('abc')` reach Prisma as NaN (which threw a 500).
+export const idParamSchema = z.object({ id: z.coerce.number().int().positive() });
+export const listingIdParamSchema = z.object({ listingId: z.coerce.number().int().positive() });
 const password = z.string().min(8, 'Password must be at least 8 characters.');
 const code = z.string().trim().regex(/^\d{6}$/, 'Code must be 6 digits.');
 // Pakistani local format e.g. 03XX-XXXXXXX (dashes optional).
@@ -114,12 +119,21 @@ const detailValue = z
   .transform((v) => String(v))
   .pipe(z.string().max(500, 'Detail value is too long.'));
 
+// Keys are user-controlled too — cap length and count so a crafted `details`
+// payload can't bloat the row (values were already capped at 500 chars).
+const detailKey = z.string().trim().min(1).max(60, 'Detail name is too long.');
+const MAX_DETAIL_KEYS = 40;
+
 const jsonObject = (fallback) =>
   z.preprocess((v) => {
     if (v == null || v === '') return fallback;
     if (typeof v === 'object') return v;
     try { return JSON.parse(v); } catch { return v; } // invalid JSON → let schema reject
-  }, z.record(detailValue));
+  }, z.record(detailKey, detailValue).superRefine((obj, ctx) => {
+    if (obj && Object.keys(obj).length > MAX_DETAIL_KEYS) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Too many detail fields (max ${MAX_DETAIL_KEYS}).` });
+    }
+  }));
 
 // 'true'/'false' string (or real boolean) → boolean.
 const formBool = z.preprocess((v) => v === true || v === 'true', z.boolean());
@@ -131,7 +145,7 @@ export const listingCreateFieldsSchema = z
     category: z.enum(CATEGORIES),
     subcategory: z.preprocess((v) => (v === '' ? null : v), z.string().trim().max(60).nullable().optional()),
     postingType: z.enum(POSTING_TYPES).optional().default('personal'),
-    price: z.coerce.number().int().nonnegative('Price must be a positive number.'),
+    price: z.coerce.number().int().nonnegative('Price must be a positive number.').max(1_000_000_000, 'Price is too large.'),
     featuredRequested: formBool.optional().default(false),
     details: jsonObject({}).optional().default({}),
   })
@@ -151,7 +165,7 @@ const imagesOrderItem = z.union([
 export const listingUpdateFieldsSchema = z.object({
   title: z.string().trim().min(3).max(120).optional(),
   description: z.string().trim().min(10).max(5000).optional(),
-  price: z.coerce.number().int().nonnegative().optional(),
+  price: z.coerce.number().int().nonnegative().max(1_000_000_000, 'Price is too large.').optional(),
   featuredRequested: formBool.optional(),
   subcategory: z.preprocess((v) => (v === '' ? null : v), z.string().trim().max(60).nullable().optional()),
   details: jsonObject(undefined).optional(),

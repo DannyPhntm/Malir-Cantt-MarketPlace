@@ -99,6 +99,12 @@ export const register = asyncHandler(async (req, res) => {
 export const verifyEmail = asyncHandler(async (req, res) => {
   const { email, code } = req.body;
 
+  // The email must belong to a real account — email-change codes live in the
+  // same table for addresses with no user yet, and consuming one here used to
+  // surface a confusing P2025 "Record not found" after a correct code.
+  const exists = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (!exists) throw new ApiError(404, 'No account found for that email.');
+
   // Find the latest active code for this email (looked up by email, NOT by the
   // submitted code, so wrong guesses are counted against it — brute-force guard).
   const record = await prisma.emailVerificationCode.findFirst({
@@ -153,16 +159,36 @@ export const resendVerification = asyncHandler(async (req, res) => {
   res.json({ resent: true });
 });
 
-/* POST /api/auth/login — verifies credentials (no JWT yet; see README). */
+// A real bcrypt hash of an unused placeholder, generated once at startup.
+// Compared against when the email doesn't exist so the "no such user" and
+// "wrong password" paths take the same time (user-enumeration timing guard).
+// The comparison result is always discarded.
+const DUMMY_HASH = bcrypt.hashSync('timing-equalisation-placeholder', 10);
+
+/* POST /api/auth/login */
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   const user = await prisma.user.findUnique({ where: { email }, include: { businessAccount: true } });
-  if (!user) throw new ApiError(401, 'Invalid email or password.');
+  if (!user) {
+    // Equalise timing with the real-password path before rejecting.
+    await bcrypt.compare(password, DUMMY_HASH);
+    throw new ApiError(401, 'Invalid email or password.');
+  }
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) throw new ApiError(401, 'Invalid email or password.');
   if (user.isBlocked) throw new ApiError(403, ACCOUNT_BLOCKED_MESSAGE, { code: 'ACCOUNT_BLOCKED' });
+  // Email verification is mandatory — an unverified registration must complete
+  // the code flow before it can sign in (otherwise verification is decorative).
+  // The structured payload lets the client route straight to the verify screen.
+  if (!user.emailVerified) {
+    throw new ApiError(403, 'Please verify your email to sign in. We can resend the code.', {
+      code: 'EMAIL_UNVERIFIED',
+      unverified: true,
+      email: user.email,
+    });
+  }
 
   res.json({ user: publicUser(user), token: signToken(user) });
 });

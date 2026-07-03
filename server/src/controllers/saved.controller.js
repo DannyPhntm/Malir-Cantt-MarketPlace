@@ -1,5 +1,10 @@
 import prisma from '../lib/prisma.js';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
+
+// Statuses a non-owner is allowed to see. Saving is limited to these so the
+// saved-listings API can't be used to probe or read private (pending/hidden/
+// rejected) listings that the detail route deliberately 404s.
+const PUBLIC_STATUSES = ['approved', 'sold'];
 
 const withListing = {
   listing: {
@@ -27,12 +32,23 @@ export const listSaved = asyncHandler(async (req, res) => {
     orderBy: { createdAt: 'desc' },
     include: withListing,
   });
-  res.json({ listings: rows.map((r) => r.listing) });
+  // A listing may go private AFTER being saved — filter those out here (unless
+  // the saver owns them) instead of leaking their content with full seller data.
+  const listings = rows
+    .map((r) => r.listing)
+    .filter((l) => l && (PUBLIC_STATUSES.includes(l.status) || l.userId === req.user.id));
+  res.json({ listings });
 });
 
 /* POST /api/saved { listingId } — idempotent save. */
 export const addSaved = asyncHandler(async (req, res) => {
   const { listingId } = req.body;
+  // Only public listings can be saved (404 mirrors the detail route so private
+  // listings' existence isn't confirmed either).
+  const listing = await prisma.listing.findUnique({ where: { id: listingId }, select: { status: true } });
+  if (!listing || !PUBLIC_STATUSES.includes(listing.status)) {
+    throw new ApiError(404, 'Listing not found.');
+  }
   await prisma.savedListing.upsert({
     where: { userId_listingId: { userId: req.user.id, listingId } },
     update: {},

@@ -141,6 +141,18 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     setUser(null);
     clearAuthToken();
+    // Shared-device hygiene: the add-listing draft carries the previous user's
+    // name/phone — don't pre-fill it into the next account's form.
+    try { localStorage.removeItem('malir-listing-draft'); } catch { /* ignore */ }
+  }, []);
+
+  // apiClient clears the token and fires this event when an authed request hits
+  // a 401 mid-session (expired/invalidated JWT) — drop to a clean logged-out
+  // state instead of leaving a "logged-in" navbar whose every action fails.
+  useEffect(() => {
+    const onExpired = () => setUser(null);
+    window.addEventListener('malir-session-expired', onExpired);
+    return () => window.removeEventListener('malir-session-expired', onExpired);
   }, []);
 
   // Change password while signed in (requires the current password).

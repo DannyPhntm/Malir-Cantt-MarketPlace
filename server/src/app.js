@@ -10,6 +10,14 @@ import { notFound, errorHandler } from './middleware/errorHandler.js';
 // Defaults to the local Vite dev server. Origins are normalised so trailing
 // slashes / casing don't cause spurious rejections.
 const normOrigin = (o) => (o || '').trim().replace(/\/+$/, '').toLowerCase();
+
+// Fail loudly if production is deployed without a configured client origin —
+// silently falling back to localhost would break the real frontend and mask a
+// deploy-config mistake (mirrors the JWT_SECRET startup guard).
+if (process.env.NODE_ENV === 'production' && !process.env.CLIENT_ORIGIN) {
+  throw new Error('CLIENT_ORIGIN must be set in production (comma-separated allowed origins).');
+}
+
 const ALLOWED_ORIGINS = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map(normOrigin)

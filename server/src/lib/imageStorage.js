@@ -128,8 +128,14 @@ export async function storeImageBuffer(file, { folder = 'listings' } = {}) {
  * Like storeImageBuffer but returns both the URL and the Cloudinary public_id
  * (needed for private documents we may later destroy/manage). Dev fallback
  * returns a base64 data URL with publicId: null.
+ *
+ * `authenticated: true` uploads the asset with Cloudinary's `authenticated`
+ * delivery type: the asset is NOT publicly fetchable by URL — it can only be
+ * delivered via a signed URL (see signedDocUrl). Use for business verification
+ * documents / CNIC photos, which are identity documents and must never be
+ * world-readable even to someone who obtains the raw URL.
  */
-export async function storeImageBufferDetailed(file, { folder = 'listings' } = {}) {
+export async function storeImageBufferDetailed(file, { folder = 'listings', authenticated = false } = {}) {
   if (!file?.buffer?.length) throw new ApiError(422, UPLOAD_FAILED);
 
   if (!CLOUDINARY_ENABLED) {
@@ -139,7 +145,11 @@ export async function storeImageBufferDetailed(file, { folder = 'listings' } = {
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: `malir/${folder}`, resource_type: 'image' },
+      {
+        folder: `malir/${folder}`,
+        resource_type: 'image',
+        ...(authenticated ? { type: 'authenticated' } : {}),
+      },
       async (err, res) => {
         if (err) return reject(new ApiError(422, UPLOAD_FAILED));
         try {
@@ -152,6 +162,34 @@ export async function storeImageBufferDetailed(file, { folder = 'listings' } = {
     );
     stream.end(file.buffer);
   });
+}
+
+/**
+ * Signed delivery URL for an `authenticated`-type asset (admin viewing of
+ * verification documents). Legacy assets uploaded with the public `upload`
+ * type (their stored URL has no /authenticated/ segment) are returned as-is —
+ * an authenticated-type signature would 404 for them.
+ */
+export function signedDocUrl(url, publicId) {
+  if (!CLOUDINARY_ENABLED || !publicId || !url || !url.includes('/authenticated/')) return url;
+  return cloudinary.url(publicId, {
+    type: 'authenticated',
+    sign_url: true,
+    secure: true,
+    resource_type: 'image',
+  });
+}
+
+/** Best-effort destroy of a previously stored private document asset. */
+export async function destroyDocAsset(publicId) {
+  if (!CLOUDINARY_ENABLED || !publicId) return;
+  try {
+    await cloudinary.uploader.destroy(publicId, { type: 'authenticated', resource_type: 'image' });
+  } catch { /* best-effort — never fail the request over cleanup */ }
+  try {
+    // Legacy docs were uploaded with the default public type.
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+  } catch { /* ignore */ }
 }
 
 /** Upload an ordered array of Multer files; returns [{ imageUrl, displayOrder }]. */

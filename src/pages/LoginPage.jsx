@@ -708,7 +708,7 @@ function PersonalForm({ onBack, onAuthenticated }) {
             </button>
             <p className="login-terms">
               By creating an account you agree to our{' '}
-              <Link to="/" className="login-terms__link">Terms of Service</Link>.
+              <Link to="/terms" className="login-terms__link">Terms of Service</Link>.
             </p>
           </form>
         </motion.div>
@@ -962,7 +962,7 @@ function BusinessForm({ onBack, onSwitchToSignIn }) {
             </button>
             <p className="login-terms">
               By creating an account you agree to our{' '}
-              <Link to="/" className="login-terms__link">Terms of Service</Link>.
+              <Link to="/terms" className="login-terms__link">Terms of Service</Link>.
             </p>
           </form>
         </motion.div>
@@ -1017,8 +1017,9 @@ function RegisterPanel({ initialType = null, onAuthenticated, onSwitchToSignIn }
 /* ── Sign in form ────────────────────────────────────────────────────────────── */
 
 function SignInForm({ onAuthenticated }) {
-  const { login } = useAuth();
+  const { login, verifyEmail, resendVerification } = useAuth();
   const [showForgot, setShowForgot] = useState(false);
+  const [needsVerify, setNeedsVerify] = useState(false);
   const [form, setForm]             = useState({ email: '', password: '' });
   const [showPw, setShowPw]         = useState(false);
   const [error, setError]           = useState('');
@@ -1037,6 +1038,13 @@ function SignInForm({ onAuthenticated }) {
       onAuthenticated();
     } catch (err) {
       setSubmitting(false);
+      // Correct credentials but unverified email → route straight to the verify
+      // screen (with resend) instead of a dead-end error message.
+      if (err?.unverified || err?.code === 'EMAIL_UNVERIFIED') {
+        setError('');
+        setNeedsVerify(true);
+        return;
+      }
       setError(err?.message || 'Could not sign in. Please try again.');
     }
   };
@@ -1046,6 +1054,17 @@ function SignInForm({ onAuthenticated }) {
       {showForgot ? (
         <motion.div key="forgot" variants={STEP_VARIANTS} initial="initial" animate="enter" exit="exit">
           <ForgotPasswordFlow onBack={() => setShowForgot(false)} />
+        </motion.div>
+      ) : needsVerify ? (
+        <motion.div key="signin-verify" variants={STEP_VARIANTS} initial="initial" animate="enter" exit="exit">
+          <EmailVerificationScreen
+            email={form.email.trim()}
+            notice="Your email isn't verified yet. Enter the code from your inbox — or resend a fresh one."
+            onVerify={(code) => verifyEmail(form.email.trim(), code)}
+            onSuccess={onAuthenticated}
+            onResend={() => resendVerification(form.email.trim())}
+            onBack={() => setNeedsVerify(false)}
+          />
         </motion.div>
       ) : (
         <motion.div key="signin" variants={STEP_VARIANTS} initial="initial" animate="enter" exit="exit">
@@ -1115,7 +1134,10 @@ export default function LoginPage() {
   // route (e.g. Add Listing) sets `?redirect=…`; otherwise fall back to home.
   // The actual auth call happens inside the forms (via AuthContext); this only
   // navigates once the session is established.
-  const redirectTo = searchParams.get('redirect') || '/';
+  // Only in-app paths are honoured: a single leading slash (rejects '//evil.com'
+  // protocol-relative URLs and absolute 'https://…' values from crafted links).
+  const rawRedirect = searchParams.get('redirect') || '/';
+  const redirectTo = /^\/(?!\/)/.test(rawRedirect) ? rawRedirect : '/';
   const handleAuthSuccess = () => navigate(redirectTo, { replace: true });
 
   return (

@@ -70,6 +70,14 @@ async function request(path, { method = 'GET', body, signal } = {}) {
   }
 
   if (!res.ok) {
+    // Session died mid-use (expired/invalidated JWT on an authed request):
+    // clear the dead token and tell AuthContext so the UI drops to a clean
+    // logged-out state instead of every action failing with per-form errors.
+    // Auth endpoints are excluded — a wrong password 401 is not a dead session.
+    if (res.status === 401 && token && !path.startsWith('/auth/')) {
+      clearAuthToken();
+      try { window.dispatchEvent(new Event('malir-session-expired')); } catch { /* SSR/test */ }
+    }
     const message = data?.error || `Request failed (${res.status}).`;
     throw new ApiError(message, {
       status: res.status,

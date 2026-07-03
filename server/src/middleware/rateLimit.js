@@ -26,6 +26,16 @@ export const authLimiter = rateLimit({
   message: { error: 'Too many attempts. Please wait a few minutes and try again.' },
 });
 
+// Upload-heavy create/edit endpoints (listings, shops, business documents).
+// Each request can carry up to 10 × 5 MB files to Cloudinary, so cap attempts
+// per IP well below the global limit — normal sellers never get near this.
+export const uploadLimiter = rateLimit({
+  ...base,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 30,
+  message: { error: 'Too many upload attempts from this device. Please try again later.' },
+});
+
 // Public contact form — unauthenticated and triggers an email, so cap it well
 // below the global limit to stop spam / inbox flooding from a single IP.
 export const contactLimiter = rateLimit({

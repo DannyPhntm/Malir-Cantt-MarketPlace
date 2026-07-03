@@ -36,6 +36,15 @@ export function errorHandler(err, req, res, _next) {
     return res.status(400).json({ error: 'Related record does not exist (foreign key failed).' });
   }
 
+  // body-parser errors carry a type/status (malformed JSON, oversized payload) —
+  // answer with a clean 4xx instead of logging them as unhandled 500s.
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Request is too large.' });
+  }
+  if (err.type === 'entity.parse.failed' || err.type === 'request.aborted') {
+    return res.status(400).json({ error: 'Invalid request body.' });
+  }
+
   console.error('[unhandled error]', err);
   res.status(500).json({ error: 'Internal server error' });
 }
