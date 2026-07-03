@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma.js';
 import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
+import { storeImage } from '../lib/imageStorage.js';
 
 // Owner fields exposed publicly with a shop.
 const ownerSelect = {
@@ -69,9 +70,23 @@ async function assertApprovedBusiness(userId) {
   }
 }
 
-function toData(body) {
+// Shop images/logo go through the same pipeline as listing images: validated as
+// plausible images and uploaded to Cloudinary in production (existing http URLs
+// pass through) — never raw multi-MB base64 blobs straight into the DB.
+async function toData(body) {
   const data = { ...body };
-  if (body.images !== undefined) data.images = body.images?.length ? JSON.stringify(body.images) : null;
+  if (body.logoUrl !== undefined) {
+    data.logoUrl = body.logoUrl ? await storeImage(body.logoUrl, { folder: 'shops' }) : null;
+  }
+  if (body.images !== undefined) {
+    if (body.images?.length) {
+      const stored = [];
+      for (const img of body.images) stored.push(await storeImage(img, { folder: 'shops' }));
+      data.images = JSON.stringify(stored);
+    } else {
+      data.images = null;
+    }
+  }
   return data;
 }
 
@@ -82,7 +97,7 @@ export const createMyShop = asyncHandler(async (req, res) => {
   if (existing) throw new ApiError(409, 'You already have a shop. Edit it instead of creating a new one.');
 
   const shop = await prisma.shop.create({
-    data: { userId: req.user.id, status: 'pending', ...toData(req.body) },
+    data: { userId: req.user.id, status: 'pending', ...(await toData(req.body)) },
     include: { user: { select: ownerSelect } },
   });
   res.status(201).json({ shop: shape(shop) });
@@ -93,7 +108,7 @@ export const updateMyShop = asyncHandler(async (req, res) => {
   const existing = await prisma.shop.findUnique({ where: { userId: req.user.id } });
   if (!existing) throw new ApiError(404, 'You do not have a shop yet.');
   const shop = await prisma.shop.update({
-    where: { userId: req.user.id }, data: toData(req.body), include: { user: { select: ownerSelect } },
+    where: { userId: req.user.id }, data: await toData(req.body), include: { user: { select: ownerSelect } },
   });
   res.json({ shop: shape(shop) });
 });

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import PageTransition from '../components/PageTransition';
 import LoadingState from '../components/LoadingState';
 import BusinessBenefitsCard from '../components/BusinessBenefitsCard';
@@ -12,7 +12,6 @@ import './BusinessApplyPage.css';
    the SAME account (userId) — never creates a second login. */
 export default function BusinessApplyPage() {
   const { isAuthenticated, loading, profile, businessStatus, isApprovedSeller, businessRequest, applyForBusinessSeller } = useAuth();
-  const navigate = useNavigate();
   const [form, setForm] = useState({
     businessName: profile?.businessName || '',
     businessType: '',
@@ -42,7 +41,9 @@ export default function BusinessApplyPage() {
   if (loading) {
     return <PageTransition><main className="bizapply"><LoadingState label="Loading…" /></main></PageTransition>;
   }
-  if (!isAuthenticated) { navigate('/login?redirect=/apply-business'); return null; }
+  // Belt-and-braces with the RequireAuth route guard — render a <Navigate>
+  // instead of calling navigate() during render (a React side-effect warning).
+  if (!isAuthenticated) return <Navigate to="/login?redirect=/apply-business" replace />;
 
   const change = (e) => {
     const { name, value } = e.target;

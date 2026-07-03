@@ -1,7 +1,8 @@
 import prisma from '../lib/prisma.js';
 import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
-import { storeImage, storeImageBuffer, storeImageBuffers } from '../lib/imageStorage.js';
+import { storeImageBuffer, storeImageBuffers } from '../lib/imageStorage.js';
 import {
+  isValidSubcategory,
   OWNER_SETTABLE_STATUSES,
   BUSINESS_ONLY_CATEGORIES,
   IMAGE_OPTIONAL_CATEGORIES,
@@ -37,20 +38,31 @@ const sellerSelect = {
 /* GET /api/listings?category=&status=&userId=&featured=&featuredRequested= */
 export const listListings = asyncHandler(async (req, res) => {
   const { category, subcategory, postingType, status, userId, featured, featuredRequested } = req.query;
+  const isAdmin = req.user?.role === 'admin';
   const where = {};
   if (category) where.category = category;
   if (subcategory) where.subcategory = subcategory;
   if (postingType) where.postingType = postingType;
-  if (status) where.status = status;
+  // Status is enforced server-side, not trusted from the query: the public feed
+  // only ever contains public statuses. Without this, anyone could request
+  // ?status=pending (or omit status entirely) and read unmoderated/hidden/
+  // rejected listings — including seller phone numbers. Admins (fresh-role via
+  // optionalAuth) may filter freely for the moderation queues.
+  if (isAdmin) {
+    if (status) where.status = status;
+    if (featuredRequested !== undefined) where.featuredRequested = featuredRequested;
+  } else {
+    where.status = status === 'sold' ? 'sold' : 'approved';
+  }
   if (userId) where.userId = userId;
   if (featured === true) {
     // "Featured" means the flag is on AND the window hasn't expired.
     where.featuredActive = true;
     where.featuredUntil = { gt: new Date() };
   } else if (featured === false) {
-    where.featuredActive = false;
+    // Not featured, OR the featured window has expired (the flag can lag expiry).
+    where.OR = [{ featuredActive: false }, { featuredUntil: { lte: new Date() } }];
   }
-  if (featuredRequested !== undefined) where.featuredRequested = featuredRequested;
 
   const listings = await prisma.listing.findMany({
     where,
@@ -208,6 +220,32 @@ export const updateListing = asyncHandler(async (req, res) => {
     if (!ownerOk) {
       throw new ApiError(400, 'This listing is awaiting review and cannot change status yet.');
     }
+
+    // Re-activating (sold/hidden → approved, rejected → pending) re-occupies a
+    // beta slot — re-run the active-listing limit so hiding listings can't be
+    // used to stockpile extras beyond the cap.
+    if (ACTIVE_LISTING_STATUSES.includes(status) && !ACTIVE_LISTING_STATUSES.includes(existing.status)) {
+      const activeCount = await prisma.listing.count({
+        where: {
+          userId: existing.userId,
+          postingType: existing.postingType,
+          status: { in: ACTIVE_LISTING_STATUSES },
+          id: { not: id },
+        },
+      });
+      const max = existing.postingType === 'business' ? MAX_BUSINESS_ACTIVE_LISTINGS : MAX_PERSONAL_ACTIVE_LISTINGS;
+      if (activeCount >= max) {
+        throw new ApiError(409, `You've reached your beta limit of ${max} active ${existing.postingType} listings. Mark another one sold or inactive first.`, {
+          code: existing.postingType === 'business' ? 'BUSINESS_LISTING_LIMIT_REACHED' : 'PERSONAL_LISTING_LIMIT_REACHED',
+        });
+      }
+    }
+  }
+
+  // Subcategory must belong to the listing's (immutable) category — the create
+  // path enforces this in the schema; the update path enforces it here.
+  if (rest.subcategory !== undefined && !isValidSubcategory(existing.category, rest.subcategory)) {
+    throw new ApiError(422, 'Subcategory does not belong to the listing category.');
   }
 
   const data = { ...rest };
@@ -236,6 +274,15 @@ export const updateListing = asyncHandler(async (req, res) => {
       throw new ApiError(422, `A listing can have at most ${MAX_IMAGES} images.`);
     }
 
+    // "Kept" URLs must be images this listing ALREADY has — otherwise the body
+    // could inject an arbitrary external URL (skipping upload validation) into
+    // a live listing.
+    const current = await prisma.listingImage.findMany({
+      where: { listingId: id },
+      select: { imageUrl: true },
+    });
+    const currentUrls = new Set(current.map((im) => im.imageUrl));
+
     // Upload all new files first, then assemble the ordered set.
     const stored = [];
     for (let i = 0; i < imagesOrder.length; i++) {
@@ -245,11 +292,28 @@ export const updateListing = asyncHandler(async (req, res) => {
         if (!file) throw new ApiError(422, 'Images could not be uploaded. Please try again.');
         stored.push({ imageUrl: await storeImageBuffer(file), displayOrder: i });
       } else {
-        // Kept image — pass the existing URL through (validated as http/data).
-        stored.push({ imageUrl: await storeImage(entry.url), displayOrder: i });
+        if (!currentUrls.has(entry.url)) {
+          throw new ApiError(422, 'Images could not be updated. Please refresh and try again.');
+        }
+        stored.push({ imageUrl: entry.url, displayOrder: i });
       }
     }
     data.images = { deleteMany: {}, create: stored };
+  }
+
+  // Re-moderation: material edits (content, price, details, images) to a listing
+  // that would otherwise be publicly live go back to 'pending' review — approval
+  // covers the content, not just the initial submission (bait-and-switch guard).
+  // Pure lifecycle changes (mark sold / hide / restore without edits) skip this.
+  if (req.user.role !== 'admin') {
+    const materialEdit =
+      ['title', 'description', 'price', 'subcategory'].some((k) => rest[k] !== undefined) ||
+      details !== undefined ||
+      imagesOrder !== undefined;
+    const nextStatus = status !== undefined ? status : existing.status;
+    if (materialEdit && nextStatus === 'approved') {
+      data.status = 'pending';
+    }
   }
 
   const listing = await prisma.listing.update({ where: { id }, data, include: withImages });

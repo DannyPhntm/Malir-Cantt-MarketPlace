@@ -10,6 +10,13 @@ import { ApiError } from '../middleware/errorHandler.js';
 
 const { RESEND_API_KEY } = process.env;
 
+// The dev fallback below prints verification/reset codes to the server console.
+// That must never happen in production (log access would mean account takeover),
+// so refuse to boot a production deploy without a real mail provider.
+if (process.env.NODE_ENV === 'production' && !RESEND_API_KEY) {
+  throw new Error('RESEND_API_KEY must be set in production — the console-log email fallback is dev-only.');
+}
+
 const MAIL_FROM = process.env.MAIL_FROM || 'People of Malir Cantt Bazaar <onboarding@resend.dev>';
 
 // Client is created lazily and reused. Null when no API key is configured.

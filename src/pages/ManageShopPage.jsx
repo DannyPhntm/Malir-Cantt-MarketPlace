@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import PageTransition from '../components/PageTransition';
 import LoadingState from '../components/LoadingState';
 import { useAuth } from '../context/AuthContext';
@@ -34,7 +34,6 @@ const STATUS_LABEL = { pending: 'Pending approval', approved: 'Approved & visibl
 
 export default function ManageShopPage() {
   const { isAuthenticated, loading, userType, isApprovedBusiness, profile } = useAuth();
-  const navigate = useNavigate();
   const fileRef = useRef(null);
 
   const [ready, setReady] = useState(false);
@@ -105,7 +104,9 @@ export default function ManageShopPage() {
   if (loading) {
     return <PageTransition><main className="add-listing"><LoadingState label="Loading…" /></main></PageTransition>;
   }
-  if (!isAuthenticated) { navigate('/login?redirect=/my-shop'); return null; }
+  // Belt-and-braces with the RequireAuth route guard — render a <Navigate>
+  // instead of calling navigate() during render (a React side-effect warning).
+  if (!isAuthenticated) return <Navigate to="/login?redirect=/my-shop" replace />;
   if (!isApprovedBusiness) {
     return (
       <PageTransition>

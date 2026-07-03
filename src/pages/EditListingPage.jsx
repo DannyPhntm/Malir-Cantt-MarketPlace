@@ -229,7 +229,11 @@ export default function EditListingPage() {
                 <h2 className="add-listing__success-heading">Changes saved</h2>
                 <p className="add-listing__success-text">
                   Your listing <strong>“{form.title}”</strong> has been updated
-                  {original.status === 'rejected' ? ' and resubmitted for review' : ''}. Redirecting to My Listings…
+                  {original.status === 'rejected'
+                    ? ' and resubmitted for review'
+                    : original.status === 'approved'
+                      ? ' and sent for a quick re-review — it will be back online once approved'
+                      : ''}. Redirecting to My Listings…
                 </p>
                 <div className="add-listing__success-actions">
                   <Link to={`/listing/${id}`} className="add-listing__success-home">View Listing</Link>

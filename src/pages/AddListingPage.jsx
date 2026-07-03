@@ -713,9 +713,9 @@ export default function AddListingPage() {
 
                       <p className="form-terms">
                         By posting, you agree to our{' '}
-                        <Link to="/" className="form-terms__link">Terms of Service</Link>{' '}
+                        <Link to="/terms" className="form-terms__link">Terms of Service</Link>{' '}
                         and{' '}
-                        <Link to="/" className="form-terms__link">Community Guidelines</Link>.
+                        <Link to="/safety" className="form-terms__link">Community Guidelines</Link>.
                       </p>
 
                     </motion.div>
