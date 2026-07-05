@@ -14,6 +14,9 @@ const upload = multer({
     files: MAX_IMAGES,
   },
   fileFilter: (_req, file, cb) => {
+    // SVG is XML/script — reject up front (magic-byte sniffing in imageStorage is
+    // the real gate, since the client-supplied MIME here is forgeable).
+    if (/svg/i.test(file.mimetype)) return cb(new ApiError(422, 'SVG images are not allowed.'));
     if (/^image\//i.test(file.mimetype)) return cb(null, true);
     cb(new ApiError(422, 'Only image files are allowed.'));
   },

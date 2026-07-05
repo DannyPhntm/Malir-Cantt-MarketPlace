@@ -12,6 +12,8 @@ import {
   MAX_PERSONAL_ACTIVE_LISTINGS,
   MAX_BUSINESS_ACTIVE_LISTINGS,
   MAX_FEATURED_PER_BUSINESS,
+  PUBLIC_FEED_DEFAULT_LIMIT,
+  PUBLIC_FEED_MAX_LIMIT,
 } from '../lib/constants.js';
 import { featuredUntilFromNow } from '../lib/featured.js';
 
@@ -64,12 +66,27 @@ export const listListings = asyncHandler(async (req, res) => {
     where.OR = [{ featuredActive: false }, { featuredUntil: { lte: new Date() } }];
   }
 
-  const listings = await prisma.listing.findMany({
+  // Cursor pagination — bounds every query so the public feed can never scan or
+  // return the whole listings table in one request. `take + 1` peeks at whether
+  // another page exists; id is the stable tiebreaker for the createdAt sort.
+  const take = Math.min(req.query.limit || PUBLIC_FEED_DEFAULT_LIMIT, PUBLIC_FEED_MAX_LIMIT);
+  const { cursor } = req.query;
+
+  const page = await prisma.listing.findMany({
     where,
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     include: { ...withImages, user: { select: sellerSelect } },
+    take: take + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
-  res.json({ listings });
+
+  let nextCursor = null;
+  if (page.length > take) {
+    const extra = page.pop(); // drop the peeked row; it belongs to the next page
+    nextCursor = extra.id;
+  }
+
+  res.json({ listings: page, nextCursor });
 });
 
 /* GET /api/listings/mine — the authenticated user's listings, all statuses. */

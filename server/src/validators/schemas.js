@@ -204,6 +204,10 @@ export const listingQuerySchema = z.object({
   userId: z.coerce.number().int().positive().optional(),
   featured: queryBool,
   featuredRequested: queryBool,
+  // Cursor pagination: `limit` caps the page size (server also hard-caps it);
+  // `cursor` is the id of the last item from the previous page.
+  limit: z.coerce.number().int().positive().max(200).optional(),
+  cursor: z.coerce.number().int().positive().optional(),
 });
 
 /* ── Business accounts ───────────────────────────────────────────────────────── */

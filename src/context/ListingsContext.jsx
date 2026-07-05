@@ -12,12 +12,23 @@ export function ListingsProvider({ children }) {
   const [error, setError] = useState(null);
 
   // Public browse data = approved listings only (mirrors the moderation model).
+  // The API is cursor-paginated (each request is server-capped), so page through
+  // until the cursor is exhausted to assemble the full set the browse UI filters
+  // and searches client-side. The iteration cap is a safety stop against a
+  // misbehaving cursor — well above any realistic beta volume.
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await listingsApi.list({ status: 'approved' });
-      setAllListings(adaptListings(res.listings));
+      const collected = [];
+      let cursor;
+      for (let i = 0; i < 200; i++) {
+        const res = await listingsApi.list({ status: 'approved', limit: 100, ...(cursor ? { cursor } : {}) });
+        collected.push(...(res.listings || []));
+        cursor = res.nextCursor;
+        if (!cursor) break;
+      }
+      setAllListings(adaptListings(collected));
     } catch (err) {
       setError(err?.message || 'Could not load listings.');
       setAllListings([]);
