@@ -3,6 +3,23 @@
 
 import apiClient from './apiClient';
 
+// The public /listings endpoint is cursor-paginated (server-capped). The admin
+// moderation queues need the COMPLETE set, so page through nextCursor and
+// concatenate — keeping each request bounded while the queue stays complete.
+// Returns the same `{ listings }` shape callers already expect.
+async function fetchAllListings(query) {
+  const all = [];
+  let cursor;
+  for (let i = 0; i < 500; i++) {
+    const qs = `${query}&limit=100${cursor ? `&cursor=${cursor}` : ''}`;
+    const res = await apiClient.get(`/listings?${qs}`);
+    all.push(...(res.listings || []));
+    if (!res.nextCursor) break;
+    cursor = res.nextCursor;
+  }
+  return { listings: all };
+}
+
 export const adminApi = {
   // Dashboard statistics
   getStats: () => apiClient.get('/stats'),
@@ -14,10 +31,11 @@ export const adminApi = {
   blockUser: (id, reason) => apiClient.patch(`/users/${id}/block`, reason ? { reason } : {}),
   unblockUser: (id) => apiClient.patch(`/users/${id}/unblock`, {}),
 
-  // Listings — filter by status (pending | approved | rejected | sold | hidden)
-  listListings: (status = 'pending') => apiClient.get(`/listings?status=${status}`),
+  // Listings — filter by status (pending | approved | rejected | sold | hidden).
+  // Pages through the cursor so the moderation queue is never truncated.
+  listListings: (status = 'pending') => fetchAllListings(`status=${status}`),
   // Featured requests: requested but not yet activated.
-  listFeaturedRequests: () => apiClient.get('/listings?featuredRequested=true&featured=false'),
+  listFeaturedRequests: () => fetchAllListings('featuredRequested=true&featured=false'),
   // Moderation + featured control — accepts any subset of
   // { status, featuredActive, featuredRequested }.
   setListingStatus: (id, body) => apiClient.patch(`/listings/${id}/status`, body),

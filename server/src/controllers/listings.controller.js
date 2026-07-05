@@ -82,8 +82,11 @@ export const listListings = asyncHandler(async (req, res) => {
 
   let nextCursor = null;
   if (page.length > take) {
-    const extra = page.pop(); // drop the peeked row; it belongs to the next page
-    nextCursor = extra.id;
+    page.pop(); // drop the peeked row — it belongs to the next page
+    // Resume AFTER the last row we actually return, so the peeked row is the
+    // first item of the next page (cursor + skip:1). Using the peeked row's id
+    // here would skip past it and drop one listing at every page boundary.
+    nextCursor = page[page.length - 1].id;
   }
 
   res.json({ listings: page, nextCursor });

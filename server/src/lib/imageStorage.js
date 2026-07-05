@@ -53,6 +53,13 @@ function sniffImageType(buf) {
   if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'png';
   if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return 'gif'; // GIF8
   if (buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP') return 'webp';
+  // ISO-BMFF container — HEIC/HEIF (default iPhone camera format) and AVIF.
+  // 'ftyp' box at offset 4, major brand at offset 8. These are raster images
+  // (Cloudinary converts them), so they're safe to accept — unlike SVG.
+  if (buf.toString('ascii', 4, 8) === 'ftyp') {
+    const brand = buf.toString('ascii', 8, 12);
+    if (/^(heic|heix|hevc|hevx|heif|mif1|msf1|avif|avis)$/.test(brand)) return 'heif';
+  }
   return null;
 }
 
