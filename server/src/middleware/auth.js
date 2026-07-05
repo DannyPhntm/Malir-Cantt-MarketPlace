@@ -34,16 +34,27 @@ export async function requireAuth(req, res, next) {
 
 // Attaches req.user when a valid token is present, but never blocks the request.
 // Used by endpoints that are public yet behave differently for owners/admins.
-export function optionalAuth(req, res, next) {
+// Mirrors requireAuth's DB lookup so role is fresh and a blocked (or deleted)
+// account is treated as anonymous — a stale token can't keep admin/owner access
+// to private records after demotion or blocking.
+export async function optionalAuth(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (token) {
-    try {
-      const payload = verifyToken(token);
-      req.user = { id: payload.sub, role: payload.role };
-    } catch {
-      /* ignore an invalid token — treat as anonymous */
-    }
+  if (!token) return next();
+  let payload;
+  try {
+    payload = verifyToken(token);
+  } catch {
+    return next(); // invalid token → anonymous
+  }
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, role: true, isBlocked: true },
+    });
+    if (user && !user.isBlocked) req.user = { id: user.id, role: user.role };
+  } catch {
+    /* DB hiccup → treat as anonymous; downstream queries will surface real errors */
   }
   next();
 }

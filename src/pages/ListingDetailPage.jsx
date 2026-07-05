@@ -400,8 +400,10 @@ export default function ListingDetailPage() {
                         <VerifiedBadge type={seller.badgeType} size="md" />
                       )}
                     </div>
+                    {/* Keyed by owner id — names aren't unique; a name-keyed
+                        profile merged different sellers into one page. */}
                     <Link
-                      to={`/seller/${encodeURIComponent(seller.name)}`}
+                      to={`/seller/${listing.userId ?? encodeURIComponent(seller.name)}`}
                       className="detail__seller-profile-link"
                     >
                       View Profile →

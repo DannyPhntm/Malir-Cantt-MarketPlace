@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma.js';
 import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
+import { storeImage } from '../lib/imageStorage.js';
 
 function publicUser(user) {
   if (!user) return user;
@@ -10,9 +11,14 @@ function publicUser(user) {
 /* GET /api/users?search= — admin user list (optional name/email search). */
 export const listUsers = asyncHandler(async (req, res) => {
   const search = req.query.search?.trim();
-  // SQLite LIKE is case-insensitive for ASCII, so plain `contains` suffices.
+  // Postgres `contains` is case-sensitive by default — search should not be.
   const where = search
-    ? { OR: [{ name: { contains: search } }, { email: { contains: search } }] }
+    ? {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ],
+      }
     : {};
 
   const users = await prisma.user.findMany({
@@ -46,7 +52,22 @@ export const getUser = asyncHandler(async (req, res) => {
 export const updateUser = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   assertSelfOrAdmin(id, req.user);
-  const user = await prisma.user.update({ where: { id }, data: req.body });
+  // Explicit field allow-list (defense-in-depth): updateUserSchema already
+  // strips unknown keys, but the controller must not rely on the validator
+  // alone as the boundary between profile edits and privileged fields
+  // (role / accountType / businessVerified / isBlocked stay unreachable).
+  const { name, phone, residentLocation, canttPassNumber, avatarUrl } = req.body;
+  const data = {};
+  if (name !== undefined) data.name = name;
+  if (phone !== undefined) data.phone = phone;
+  if (residentLocation !== undefined) data.residentLocation = residentLocation;
+  if (canttPassNumber !== undefined) data.canttPassNumber = canttPassNumber;
+  if (avatarUrl !== undefined) {
+    // Route avatars through the image pipeline: base64 → Cloudinary in prod
+    // (validated as a real image) instead of persisting raw base64 blobs.
+    data.avatarUrl = avatarUrl === null ? null : await storeImage(avatarUrl, { folder: 'avatars' });
+  }
+  const user = await prisma.user.update({ where: { id }, data });
   res.json({ user: publicUser(user) });
 });
 

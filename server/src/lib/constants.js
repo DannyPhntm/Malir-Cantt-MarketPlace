@@ -58,6 +58,13 @@ export const FEATURED_DURATION_DAYS = 14;
 export const MIN_IMAGES = 1;
 export const MAX_IMAGES = 10;
 
+// ── Public feed pagination ─────────────────────────────────────────────────────
+// Hard per-request ceiling so a single query can never scan/return the whole
+// listings table (bounds Neon load + API response size). The browse UI pages
+// through with a cursor; each page is at most PUBLIC_FEED_MAX_LIMIT rows.
+export const PUBLIC_FEED_DEFAULT_LIMIT = 60;
+export const PUBLIC_FEED_MAX_LIMIT = 100;
+
 // Smallest decoded size we'll accept as a plausibly-real photo. A blank/empty
 // canvas export (the iOS Safari large-photo bug) is only a few hundred bytes;
 // real downscaled photos are tens of KB+. Used to reject placeholder uploads

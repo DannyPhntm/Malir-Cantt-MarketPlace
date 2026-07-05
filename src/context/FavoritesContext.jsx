@@ -43,12 +43,15 @@ export function FavoritesProvider({ children }) {
       setLoading(true);
       try {
         // Merge any favourites collected while logged out, then load from server.
+        // Guest storage is only cleared once the server list has been fetched —
+        // a failed merge (offline blip, expired token) must not silently destroy
+        // the guest's saved list.
         const guest = readGuest();
         if (guest.length) {
           await Promise.allSettled(guest.map((g) => savedApi.add(g.id)));
-          writeGuest([]);
         }
         const res = await savedApi.list();
+        if (guest.length) writeGuest([]);
         if (active) setFavorites(res.listings.map(adaptListing));
       } catch {
         /* keep current state on failure */

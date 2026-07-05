@@ -1,7 +1,7 @@
 import prisma from '../lib/prisma.js';
 import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
 import { SELLER_STATUSES } from '../lib/constants.js';
-import { storeImageBufferDetailed } from '../lib/imageStorage.js';
+import { storeImageBufferDetailed, signedDocUrl, destroyDocAsset } from '../lib/imageStorage.js';
 
 // Verification document fields are PRIVATE (admin-only). This explicit list is
 // what we strip before returning a business account to a non-admin caller.
@@ -14,6 +14,17 @@ function stripPrivateDocs(account) {
   const out = { ...account };
   for (const f of PRIVATE_DOC_FIELDS) delete out[f];
   return out;
+}
+
+// Admin view: swap authenticated-type document URLs for signed delivery URLs
+// (the raw stored URL of an authenticated asset is not publicly fetchable).
+function withSignedDocs(account) {
+  if (!account) return account;
+  return {
+    ...account,
+    verificationDocUrl: signedDocUrl(account.verificationDocUrl, account.verificationDocPublicId),
+    cnicDocUrl: signedDocUrl(account.cnicDocUrl, account.cnicDocPublicId),
+  };
 }
 
 /* POST /api/business-accounts  (multipart/form-data)
@@ -33,11 +44,16 @@ export const applyForBusiness = asyncHandler(async (req, res) => {
     throw new ApiError(422, 'A business verification document photo is required.', { code: 'VERIFICATION_DOC_REQUIRED' });
   }
 
-  // Upload the required verification doc (and optional CNIC) to a private folder
-  // BEFORE writing the row — if an upload fails, the application is not saved.
-  const verification = await storeImageBufferDetailed(verificationFile, { folder: 'business-verification' });
+  // Upload the required verification doc (and optional CNIC) BEFORE writing the
+  // row — if an upload fails, the application is not saved. Uploaded with the
+  // `authenticated` delivery type: identity documents must not be fetchable by
+  // anyone who obtains the URL — only admins see them, via signed URLs.
+  const verification = await storeImageBufferDetailed(verificationFile, {
+    folder: 'business-verification',
+    authenticated: true,
+  });
   const cnic = cnicFile?.buffer?.length
-    ? await storeImageBufferDetailed(cnicFile, { folder: 'business-verification' })
+    ? await storeImageBufferDetailed(cnicFile, { folder: 'business-verification', authenticated: true })
     : null;
 
   const docData = {
@@ -50,14 +66,31 @@ export const applyForBusiness = asyncHandler(async (req, res) => {
     ...(cnic ? { cnicDocUrl: cnic.url, cnicDocPublicId: cnic.publicId } : {}),
   };
 
-  const account = await prisma.businessAccount.upsert({
+  // Re-applications replace the stored documents — remember the old assets so
+  // they can be removed from Cloudinary after a successful save (no orphaned
+  // identity documents left behind).
+  const previous = await prisma.businessAccount.findUnique({
     where: { userId },
-    update: { businessName, ...(businessType !== undefined ? { businessType } : {}), ...docData },
-    create: { userId, businessName, businessType: businessType || null, ...docData },
+    select: { verificationDocPublicId: true, cnicDocPublicId: true },
   });
 
-  // Reflect the chosen account type on the user.
-  await prisma.user.update({ where: { id: userId }, data: { accountType: 'business' } });
+  // Account row + user accountType change atomically.
+  const [account] = await prisma.$transaction([
+    prisma.businessAccount.upsert({
+      where: { userId },
+      update: { businessName, ...(businessType !== undefined ? { businessType } : {}), ...docData },
+      create: { userId, businessName, businessType: businessType || null, ...docData },
+    }),
+    prisma.user.update({ where: { id: userId }, data: { accountType: 'business' } }),
+  ]);
+
+  // Best-effort cleanup of the replaced document assets.
+  if (previous?.verificationDocPublicId && previous.verificationDocPublicId !== verification.publicId) {
+    await destroyDocAsset(previous.verificationDocPublicId);
+  }
+  if (cnic && previous?.cnicDocPublicId && previous.cnicDocPublicId !== cnic.publicId) {
+    await destroyDocAsset(previous.cnicDocPublicId);
+  }
 
   // Caller is the owner — safe to return their own account, minus nothing extra.
   res.status(201).json({ businessAccount: account });
@@ -95,7 +128,8 @@ export const listBusinessAccounts = asyncHandler(async (req, res) => {
       },
     },
   });
-  res.json({ businessAccounts });
+  // Admin-only route — document URLs are signed for authenticated-type assets.
+  res.json({ businessAccounts: businessAccounts.map(withSignedDocs) });
 });
 
 /* GET /api/business-accounts/:id — owner or admin only. Verification documents
@@ -109,7 +143,7 @@ export const getBusinessAccount = asyncHandler(async (req, res) => {
   const isOwner = req.user?.id === account.userId;
   if (!isAdmin && !isOwner) throw new ApiError(403, 'Not authorised for this account.');
 
-  res.json({ businessAccount: isAdmin ? account : stripPrivateDocs(account) });
+  res.json({ businessAccount: isAdmin ? withSignedDocs(account) : stripPrivateDocs(account) });
 });
 
 /* PATCH /api/business-accounts/:id/decision — admin sets seller status and/or
@@ -126,8 +160,11 @@ export const decideBusinessAccount = asyncHandler(async (req, res) => {
   const nextPayment = paymentStatus ?? existing.paymentStatus;
   const settled = nextPayment === 'paid' || nextPayment === 'waived';
   const verified = nextSeller === 'approved' && settled;
+  const wasVerified =
+    existing.sellerStatus === 'approved' &&
+    (existing.paymentStatus === 'paid' || existing.paymentStatus === 'waived');
 
-  const [account] = await prisma.$transaction([
+  const ops = [
     prisma.businessAccount.update({
       where: { id },
       data: {
@@ -140,7 +177,26 @@ export const decideBusinessAccount = asyncHandler(async (req, res) => {
       where: { id: existing.userId },
       data: { businessVerified: verified },
     }),
-  ]);
+  ];
+
+  // Revoking an approved business also takes their public business presence
+  // offline: the shop and any live business listings are hidden (reversible —
+  // nothing is deleted; featured flags are cleared so slots free up). Without
+  // this, a revoked business kept its shop and listings live indefinitely.
+  if (wasVerified && !verified) {
+    ops.push(
+      prisma.shop.updateMany({
+        where: { userId: existing.userId, status: { in: ['pending', 'approved'] } },
+        data: { status: 'hidden' },
+      }),
+      prisma.listing.updateMany({
+        where: { userId: existing.userId, postingType: 'business', status: { in: ['pending', 'approved'] } },
+        data: { status: 'hidden', featuredActive: false, featuredUntil: null },
+      }),
+    );
+  }
+
+  const [account] = await prisma.$transaction(ops);
 
   res.json({ businessAccount: account, businessVerified: verified });
 });

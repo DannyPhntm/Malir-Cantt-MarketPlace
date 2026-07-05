@@ -73,15 +73,22 @@ function CheckIcon() {
 
 export default function SellerProfilePage() {
   const { sellerName } = useParams();
-  const name = decodeURIComponent(sellerName);
+  const param = decodeURIComponent(sellerName);
+  // Profiles are keyed by owner id — display names are NOT unique, and matching
+  // by name merged different sellers into one page (showing the first match's
+  // phone number for all of them). A numeric param is a user id; anything else
+  // falls back to legacy name matching so old shared links keep working.
+  const sellerId = /^\d+$/.test(param) ? Number(param) : null;
   const { allListings, loading } = useListings();
   const [phoneRevealed, setPhoneRevealed] = useState(false);
   const [copied, setCopied]               = useState(false);
 
   const sellerListings = useMemo(
-    () => allListings.filter(l => l.seller?.name === name),
-    [allListings, name]
+    () => allListings.filter(l => (sellerId != null ? l.userId === sellerId : l.seller?.name === param)),
+    [allListings, sellerId, param]
   );
+
+  const name = sellerId != null ? (sellerListings[0]?.seller?.name || 'this seller') : param;
 
   if (loading) {
     return (

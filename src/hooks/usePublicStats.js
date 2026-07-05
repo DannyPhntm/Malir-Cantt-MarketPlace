@@ -11,15 +11,21 @@ import statsApi from '../services/statsApi';
 // share the in-flight promise, so concurrent mounts make a single request and
 // later mounts reuse the cached value.
 let cachedStats = null;
+let cachedAt = 0;
 let inFlight = null;
 
+// Stats drift as listings/users are added — refresh after a short TTL instead
+// of freezing the first result for the whole SPA session.
+const CACHE_TTL_MS = 60_000;
+
 function loadStats() {
-  if (cachedStats) return Promise.resolve(cachedStats);
+  if (cachedStats && Date.now() - cachedAt < CACHE_TTL_MS) return Promise.resolve(cachedStats);
   if (inFlight) return inFlight;
   inFlight = statsApi
     .getPublicStats()
     .then((res) => {
       cachedStats = res.stats;
+      cachedAt = Date.now();
       inFlight = null;
       return cachedStats;
     })
@@ -35,7 +41,7 @@ export function usePublicStats() {
   const [stats, setStats] = useState(cachedStats);
 
   useEffect(() => {
-    if (cachedStats) return; // already have it — no request
+    if (cachedStats && Date.now() - cachedAt < CACHE_TTL_MS) return; // fresh — no request
     let active = true;
     loadStats()
       .then((res) => { if (active) setStats(res); })

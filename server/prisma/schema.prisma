@@ -20,24 +20,24 @@ datasource db {
 
 // ── Users ────────────────────────────────────────────────────────────────────
 model User {
-  id               Int      @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   name             String
-  email            String   @unique
-  passwordHash     String   @map("password_hash")
+  email            String    @unique
+  passwordHash     String    @map("password_hash")
   phone            String
-  canttPassNumber  String?  @map("cantt_pass_number")
-  residentLocation String   @map("resident_location")
-  avatarUrl        String?  @map("avatar_url") // base64 data-URL or external URL; null = use initials
-  accountType      String   @default("personal") @map("account_type") // personal | business
-  role             String   @default("user") // user | admin
-  businessVerified Boolean  @default(false) @map("business_verified")
-  emailVerified    Boolean  @default(false) @map("email_verified")
+  canttPassNumber  String?   @map("cantt_pass_number")
+  residentLocation String    @map("resident_location")
+  avatarUrl        String?   @map("avatar_url") // base64 data-URL or external URL; null = use initials
+  accountType      String    @default("personal") @map("account_type") // personal | business
+  role             String    @default("user") // user | admin
+  businessVerified Boolean   @default(false) @map("business_verified")
+  emailVerified    Boolean   @default(false) @map("email_verified")
   // Admin moderation — reversible account suspension (never deletes data).
   isBlocked        Boolean   @default(false) @map("is_blocked")
   blockedAt        DateTime? @map("blocked_at")
   blockedReason    String?   @map("blocked_reason")
   blockedByAdminId Int?      @map("blocked_by_admin_id")
-  createdAt        DateTime @default(now()) @map("created_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
 
   listings        Listing[]
   businessAccount BusinessAccount?
@@ -49,26 +49,26 @@ model User {
 
 // ── Listings ─────────────────────────────────────────────────────────────────
 model Listing {
-  id                Int      @id @default(autoincrement())
-  userId            Int      @map("user_id")
+  id                Int       @id @default(autoincrement())
+  userId            Int       @map("user_id")
   title             String
   description       String
   category          String // vehicles | property | electronics | home-living | fashion | services | food | jobs | fitness | other
-  subcategory       String?  @map("subcategory") // slug within the category, or null
-  postingType       String   @default("personal") @map("posting_type") // personal | business
+  subcategory       String?   @map("subcategory") // slug within the category, or null
+  postingType       String    @default("personal") @map("posting_type") // personal | business
   shopId            Int?      @map("shop_id") // business listings link to the poster's Shop (directory) when they have one
   price             Int // stored in PKR (whole rupees)
-  featuredRequested Boolean  @default(false) @map("featured_requested")
-  featuredActive    Boolean  @default(false) @map("featured_active")
+  featuredRequested Boolean   @default(false) @map("featured_requested")
+  featuredActive    Boolean   @default(false) @map("featured_active")
   // Monetization-ready (no payments yet): a future timestamp = promotion active.
   // Set manually / by admin for now; a payment gateway can populate them later.
   featuredUntil     DateTime? @map("featured_until")
   boostedUntil      DateTime? @map("boosted_until")
-  status            String   @default("pending") // pending | approved | rejected | sold | hidden
+  status            String    @default("pending") // pending | approved | rejected | sold | hidden
   // Category-specific attributes (make/model/year, bedrooms, foodType, …) stored
   // as a JSON string — the set of fields varies by category (see categoryConfig).
   details           String?
-  createdAt         DateTime @default(now()) @map("created_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
 
   user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   shop    Shop?          @relation(fields: [shopId], references: [id], onDelete: SetNull)
@@ -79,6 +79,10 @@ model Listing {
   @@index([category])
   @@index([status])
   @@index([shopId])
+  // Composite indexes for the hot read paths: the public feed
+  // (status='approved' ORDER BY created_at DESC) and category browsing.
+  @@index([status, createdAt])
+  @@index([category, status])
   @@map("listings")
 }
 

@@ -53,7 +53,8 @@ export const getStats = asyncHandler(async (req, res) => {
     prisma.listing.count({ where: { status: 'rejected' } }),
     prisma.listing.count({ where: { status: 'sold' } }),
     prisma.listing.count({ where: { status: 'hidden' } }),
-    prisma.listing.count({ where: { featuredActive: true } }),
+    // Featured = flag on AND window not expired (the flag can lag expiry).
+    prisma.listing.count({ where: { featuredActive: true, featuredUntil: { gt: new Date() } } }),
     // Featured requested but not yet activated by an admin.
     prisma.listing.count({ where: { featuredRequested: true, featuredActive: false } }),
     prisma.businessAccount.count(),
