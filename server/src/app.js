@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import apiRoutes from './routes/index.js';
@@ -28,6 +29,16 @@ export function createApp() {
   // protection) keys on the actual client, not the shared proxy address.
   // `1` (not `true`) is the safe, specific value express-rate-limit recommends.
   app.set('trust proxy', 1);
+
+  // Gzip-compress responses over ~1 KB when the client advertises support via
+  // Accept-Encoding (compression negotiates this automatically and sets
+  // `Vary: Accept-Encoding`). Our API returns JSON/text — highly compressible,
+  // so list endpoints (listings, shops, stats) transfer far fewer bytes. The
+  // default filter uses `compressible`, so it skips already-compressed content
+  // types; image bytes are served from Cloudinary (not through the API), so
+  // there's no double-compression risk here. Placed first so it wraps every
+  // downstream response.
+  app.use(compression({ threshold: 1024 }));
 
   // Security headers (defaults). API serves JSON only, so allow cross-origin
   // resource sharing of those responses to the configured frontend.
