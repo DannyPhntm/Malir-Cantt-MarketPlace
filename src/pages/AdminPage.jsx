@@ -90,11 +90,12 @@ export default function AdminPage() {
     setLoading(true);
     setError(null);
     try {
-      const [sres, fres, bresPending, bresApproved, ures, shres] = await Promise.all([
+      const [sres, fres, bresPending, bresApproved, bresIncomplete, ures, shres] = await Promise.all([
         adminApi.getStats(),
         adminApi.listFeaturedRequests(),
         adminApi.listBusinessAccounts('pending'),
         adminApi.listBusinessAccounts('approved'),
+        adminApi.listBusinessAccounts('not_applied'),
         adminApi.listUsers(),
         shopsApi.listAll(),
       ]);
@@ -103,11 +104,14 @@ export default function AdminPage() {
       // Show pending applications + approved-but-not-yet-settled accounts (the
       // latter still need a waive/mark-paid to become a live business — otherwise
       // the user is "approved" but businessVerified stays false). Fully-settled
-      // businesses aren't shown (nothing actionable).
+      // businesses aren't shown (nothing actionable). Incomplete signups
+      // (business account created at register, verification doc never submitted)
+      // are listed last in a warning state so no applicant is silently invisible.
       const isSettled = (b) => b.paymentStatus === 'paid' || b.paymentStatus === 'waived';
       setBusinesses([
         ...bresPending.businessAccounts,
         ...bresApproved.businessAccounts.filter((b) => !isSettled(b)),
+        ...bresIncomplete.businessAccounts,
       ]);
       setUsers(ures.users);
       setShops(shres.shops || []);
@@ -544,7 +548,11 @@ export default function AdminPage() {
                         <div className="admin__row-main">
                           <div className="admin__row-top">
                             <span className="admin__row-title">{b.businessName}</span>
-                            <span className="admin__tag">Seller: {b.sellerStatus}</span>
+                            {b.sellerStatus === 'not_applied' ? (
+                              <span className="admin__tag admin__tag--blocked">Incomplete — verification not submitted</span>
+                            ) : (
+                              <span className="admin__tag">Seller: {b.sellerStatus}</span>
+                            )}
                             <span className="admin__tag">Payment: {b.paymentStatus}</span>
                             {b.businessType && <span className="admin__tag">Type: {b.businessType}</span>}
                           </div>
@@ -586,8 +594,11 @@ export default function AdminPage() {
                             <div className="admin__row-meta"><span>Note: {b.adminNotes}</span></div>
                           )}
                         </div>
+                        {/* Incomplete signups can't be approved (no verification doc)
+                            or rejected (nothing was applied for) — contact info above
+                            lets an admin nudge the user to finish on /apply-business. */}
                         <div className="admin__row-actions">
-                          {b.sellerStatus !== 'approved' && (
+                          {b.sellerStatus !== 'approved' && b.sellerStatus !== 'not_applied' && (
                             <>
                               <button className="admin__btn admin__btn--approve" disabled={busy}
                                 onClick={() => decideBusiness(b.id, { sellerStatus: 'approved', paymentStatus: b.paymentStatus === 'paid' ? 'paid' : 'waived' }, 'Business Seller approved', true)}>
@@ -605,13 +616,13 @@ export default function AdminPage() {
                               </button>
                             </>
                           )}
-                          {b.paymentStatus !== 'waived' && (
+                          {b.sellerStatus !== 'not_applied' && b.paymentStatus !== 'waived' && (
                             <button className="admin__btn" disabled={busy}
                               onClick={() => decideBusiness(b.id, { paymentStatus: 'waived' }, 'Payment waived', false)}>
                               Waive payment
                             </button>
                           )}
-                          {b.paymentStatus !== 'paid' && (
+                          {b.sellerStatus !== 'not_applied' && b.paymentStatus !== 'paid' && (
                             <button className="admin__btn" disabled={busy}
                               onClick={() => decideBusiness(b.id, { paymentStatus: 'paid' }, 'Marked paid', false)}>
                               Mark paid

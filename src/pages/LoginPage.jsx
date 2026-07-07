@@ -309,22 +309,29 @@ function EmailVerificationScreen({ email, notice, onVerify, onSuccess, onResend,
   );
 }
 
-/* ── Business application — pending approval state ────────────────────────────── */
+/* ── Business signup — account created, verification still required ───────────── */
+// Signup only creates the business account shell (sellerStatus 'not_applied').
+// The actual application — with the required verification document — happens on
+// /apply-business, so this screen must NOT claim the application is pending.
 
-function BusinessPendingSuccess() {
+function BusinessNextStep() {
   return (
     <div className="verified-success">
       <div className="verified-success__icon">
         <CheckIcon />
       </div>
-      <p className="verified-success__title">Application submitted!</p>
+      <p className="verified-success__title">Business account created!</p>
       <span className="biz-pending-badge">
-        <ShieldIcon /> Pending Approval
+        <ShieldIcon /> One step left: verification
       </span>
       <p className="verified-success__text">
-        Your business account is under review. Once approved, you'll automatically receive your{' '}
-        <strong>Verified Business</strong> badge and be able to list Services.
+        To submit your application for review, add your business details and upload a{' '}
+        <strong>verification document</strong> (a bill, receipt, business card, or rent document
+        showing your business name). Your application reaches the admin team only after this step.
       </p>
+      <Link to="/apply-business" className="login-submit login-submit--link">
+        Complete your application
+      </Link>
     </div>
   );
 }
@@ -832,7 +839,7 @@ function BusinessForm({ onBack, onSwitchToSignIn }) {
           <span className="reg-type-badge"><BuildingIcon /> Business Account</span>
 
           <BusinessBenefitsCard
-            note="Business accounts are reviewed before activation. After signup your status will be Pending Approval."
+            note="Business accounts are reviewed before activation. After signup you'll upload a verification document to submit your application for review."
           />
 
           <form className="login-form" onSubmit={handleSubmit} noValidate>
@@ -973,8 +980,9 @@ function BusinessForm({ onBack, onSwitchToSignIn }) {
           <EmailVerificationScreen
             email={form.email}            onVerify={(code) => verifyEmail(form.email, code)}
             notice={verifyNotice}
-            // Account + business application are created server-side at register;
-            // verifying the email signs the user in (status stays Pending Approval).
+            // Register creates the account + business shell (not yet applied);
+            // verifying the email signs the user in, then we point the user at
+            // /apply-business to submit the actual application (doc required).
             onSuccess={() => setStage('done')}
             onResend={handleResend}
             onBack={() => setStage('form')}
@@ -984,7 +992,7 @@ function BusinessForm({ onBack, onSwitchToSignIn }) {
 
       {stage === 'done' && (
         <motion.div key="done" variants={STEP_VARIANTS} initial="initial" animate="enter" exit="exit">
-          <BusinessPendingSuccess />
+          <BusinessNextStep />
         </motion.div>
       )}
     </AnimatePresence>

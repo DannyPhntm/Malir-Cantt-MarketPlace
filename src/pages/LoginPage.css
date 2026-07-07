@@ -234,6 +234,15 @@
   box-shadow: none;
 }
 
+/* Link rendered with the primary button look (business next-step CTA) */
+.login-submit--link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  margin-top: var(--space-3);
+}
+
 .login-terms {
   font-family: var(--font-sans);
   font-size: var(--text-sm);
